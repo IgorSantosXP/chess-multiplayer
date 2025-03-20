@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1181368708373220430
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8219210158490786342}
+  - component: {fileID: 4609816740024093483}
+  m_Layer: 0
+  m_Name: PromotionWindow
+  m_TagString: Promotion
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8219210158490786342
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1181368708373220430}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 164.52283, y: 390.66455, z: -1.6847154}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4609816740024093483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1181368708373220430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b4b2e820f183224d85a833e8a7dba5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boardTransform: {fileID: 716658538178819704, guid: c4ea306fc2d077343af40a452caaeed3, type: 3}
+  whitePieces:
+  - {fileID: 11400000, guid: 3552365d91c331a4e96bd82aac07e909, type: 2}
+  - {fileID: 11400000, guid: 05566d496399a9a45a3a9ac62c66fbff, type: 2}
+  - {fileID: 11400000, guid: dcc7f47a0944eb54caea59d3b61471b4, type: 2}
+  - {fileID: 11400000, guid: a970e0f5fc574774b90262d876765c25, type: 2}
+  blackPieces:
+  - {fileID: 11400000, guid: d6a821a1325ca414da9843e75223e391, type: 2}
+  - {fileID: 11400000, guid: 9ee2facccccb72c468fb279dfde0c7cc, type: 2}
+  - {fileID: 11400000, guid: 7503e15f5f8db6b48ac08345eab2d44f, type: 2}
+  - {fileID: 11400000, guid: 17747821c468a5941ae2b6bc8e969cf4, type: 2}
+  piecePrefab: {fileID: 8006138334181124568, guid: 2d7be78f6c4ddf6419a13629f515b984, type: 3}
+  squareBackgroundPrefab: {fileID: 3876628990977894207, guid: ccd52f29df9476a48b49c8a504bd29df, type: 3}

@@ -1,0 +1,167 @@
+using System;
+using System.Collections.Generic;
+using TMPro;
+using Unity.Netcode;
+using Unity.Services.Authentication;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class ChessMultiplayer : NetworkBehaviour
+{
+    public static ChessMultiplayer Instance { get; private set; }
+
+    public const int MAX_PLAYER_AMOUNT = 2;
+    private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PlayerNameMultiplayer";
+
+    private NetworkList<PlayerData> playerDataNetworkList;
+    private string playerName;
+    private bool isInGameScene;
+    private NetworkVariable<int> gameTimer = new NetworkVariable<int>(180, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public event EventHandler OnPlayerDataNetworkListChanged;
+    public event EventHandler OnFailedToJoinGame;
+
+    private void Awake() {
+        Instance = this;
+        isInGameScene = false;
+
+        DontDestroyOnLoad(gameObject);
+
+        playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "PlayerName" + UnityEngine.Random.Range(100, 1000));
+        playerDataNetworkList = new NetworkList<PlayerData>();
+        playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
+        SceneManager.activeSceneChanged += OnSceneChanged;
+    }
+
+    void OnSceneChanged(Scene oldScene, Scene newScene) {
+        if (newScene.name == Loader.Scene.GameScene.ToString()) {
+            isInGameScene = true;
+            return;
+        }
+        isInGameScene = false;
+    }
+
+    private void PlayerDataNetworkList_OnListChanged(NetworkListEvent<PlayerData> changeEvent) {
+        OnPlayerDataNetworkListChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void StartHost() {
+        NetworkManager.Singleton.OnClientConnectedCallback += NetworkManager_OnClientConnectedCallback;
+        NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_Server_OnClientDisconnectCallback;
+        NetworkManager.Singleton.StartHost();
+        
+    }
+
+    public void StartClient() {
+        NetworkManager.Singleton.OnClientConnectedCallback += NetworkManager_Client_OnClientConnectedCallback;
+        NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_Client_OnClientDisconnectCallback;
+        NetworkManager.Singleton.StartClient();
+    }
+
+    private void NetworkManager_Server_OnClientDisconnectCallback(ulong clientId) {
+        if (isInGameScene) return;
+        if (clientId == NetworkManager.ServerClientId) {
+            NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_OnClientConnectedCallback;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Server_OnClientDisconnectCallback;
+            playerDataNetworkList.Clear();
+            return;
+        }
+        for (int i = 0; i < playerDataNetworkList.Count; i++) {
+            PlayerData playerData = playerDataNetworkList[i];
+            if (playerData.clientId == clientId) {
+                playerDataNetworkList.RemoveAt(i);
+            }
+        }
+        if (NetworkManager.Singleton.ConnectedClientsList.Count < MAX_PLAYER_AMOUNT) {
+            LobbyUIManager.Instance.SetStartButtonActive(false);
+        }
+    }
+
+    private void NetworkManager_OnClientConnectedCallback(ulong clientId) {
+        if (isInGameScene) return;
+        if (clientId == NetworkManager.ServerClientId) {
+            playerDataNetworkList.Clear();
+        }
+
+        LobbyUIManager.Instance.SetStartButtonActive(false);
+
+        playerDataNetworkList.Add(new PlayerData {
+            clientId = clientId
+        });
+        SetPlayerNameServerRpc(GetPlayerName(), "Host");
+        SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
+        if (NetworkManager.Singleton.ConnectedClientsList.Count == MAX_PLAYER_AMOUNT) {
+            LobbyUIManager.Instance.SetStartButtonActive(true);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetPlayerIdServerRpc(string playerId, ServerRpcParams serverRpcParams = default) {
+        int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
+
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+
+        playerData.playerId = playerId;
+
+        playerDataNetworkList[playerDataIndex] = playerData;
+    }
+
+    private void NetworkManager_Client_OnClientConnectedCallback(ulong clientId) {
+        if (isInGameScene) return;
+        LobbyUIManager.Instance.SetStartButtonActive(false);
+        SetPlayerNameServerRpc(GetPlayerName(), "client");
+        SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
+    }
+
+    private void NetworkManager_Client_OnClientDisconnectCallback(ulong clientId) {
+        if (isInGameScene) return;
+        OnFailedToJoinGame?.Invoke(this, EventArgs.Empty);
+        NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Client_OnClientDisconnectCallback;
+        NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_Client_OnClientConnectedCallback;
+        LobbyUIManager.Instance.OpenHostDisconnectWindow();
+    }
+
+    public string GetPlayerName() {
+        return playerName;
+    }
+
+    public void SetPlayerName(string playerName) {
+        this.playerName = playerName;
+
+        PlayerPrefs.SetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, playerName);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetPlayerNameServerRpc(string playerName, string daonde, ServerRpcParams serverRpcParams = default) {
+        int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
+
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+
+        playerData.playerName = playerName;
+
+        playerDataNetworkList[playerDataIndex] = playerData;
+    }
+
+    public int GetPlayerDataIndexFromClientId(ulong clientId) {
+        for (int i = 0; i < playerDataNetworkList.Count; i++) {
+            if (playerDataNetworkList[i].clientId == clientId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public NetworkList<PlayerData> GetPlayerDataNetworkList() {
+        return playerDataNetworkList;
+    }
+
+    public void SetGameTimer(int timer) {
+        if (IsServer) {
+            gameTimer.Value = timer;
+        }
+    }
+
+    public int GetGameTimer() {
+        return gameTimer.Value;
+    }
+}

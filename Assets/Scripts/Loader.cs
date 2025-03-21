@@ -14,7 +14,6 @@ public class Loader
     private static Scene targetScene;
 
     public static void Load(Scene targetScene) {
-        Debug.Log($"Caiu aqui");
         Loader.targetScene = targetScene;
 
         SceneManager.LoadScene(Scene.LoadingScene.ToString());
@@ -25,7 +24,6 @@ public class Loader
     }
 
     public static void LoaderCallback() {
-        Debug.Log($"Agora aqui");
         SceneManager.LoadScene(targetScene.ToString());
     }
 }

@@ -217,7 +217,10 @@ public class Piece : NetworkBehaviour
             }
 
             if (newPosition == boardManager.GetLastPawnDoubleStepCapturePosition()) {
-                possibleMoves.Add(newPosition);
+                Piece targetPositionPiece = boardManager.GetLastPawnDoubleStepPiece();
+                if (targetPositionPiece != null && targetPositionPiece.GetPlayerType() != GetPlayerType()) {
+                    possibleMoves.Add(newPosition);
+                }
             }
         }
 

@@ -82,7 +82,7 @@ public class GameManager : NetworkBehaviour
         while (isGameRunning) {
             if (currentPlayablePlayerType.Value == PlayerType.White) {
                 if (whiteTimeRemaining.Value <= 0) {
-                    OnTimeOutRpc(PlayerType.Black);
+                    OnTimeOutRpc(PlayerType.Black, PlayerType.White);
                     yield break;
                 }
                 whiteTimeRemaining.Value -= 1;
@@ -90,7 +90,7 @@ public class GameManager : NetworkBehaviour
             }
             if (currentPlayablePlayerType.Value == PlayerType.Black) {
                 if (blackTimeRemaining.Value <= 0) {
-                    OnTimeOutRpc(PlayerType.White);
+                    OnTimeOutRpc(PlayerType.White, PlayerType.Black);
                     yield break;
                 }
                 blackTimeRemaining.Value -= 1;
@@ -136,9 +136,9 @@ public class GameManager : NetworkBehaviour
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    private void OnTimeOutRpc(PlayerType winner) {
-        string title = "TimeOut";
-        string text = $"{winner} won!";
+    private void OnTimeOutRpc(PlayerType winner, PlayerType currentPlayer) {
+        string title = localPlayerType == winner ? "Victory!" : "Defeat!";
+        string text = $"{currentPlayer}'s time is over, {winner} has won!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
     }
@@ -262,5 +262,18 @@ public class GameManager : NetworkBehaviour
         if (wantsRematch) return;
 
         GameUIManager.Instance.SetRequestRematch();
+    }
+
+    public void TriggerOnSurrender() {
+        PlayerType winner = localPlayerType == PlayerType.White ? PlayerType.Black : PlayerType.White;
+        OnPlayerSurrenderRpc(winner, localPlayerType);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void OnPlayerSurrenderRpc(PlayerType winner, PlayerType currentPlayer) {
+        string title = localPlayerType == winner ? "Victory!" : "Defeat!";
+        string text = $"{currentPlayer} surrendered, {winner} won!";
+        isGameRunning = false;
+        OnEndGame?.Invoke(title, text);
     }
 }

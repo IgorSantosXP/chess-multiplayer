@@ -13,15 +13,19 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private GameObject endGameWindow;
     [SerializeField] private GameObject timersUI;
     [SerializeField] private GameObject loadingUI;
+    [SerializeField] private GameObject rematchRequestWindow;
+    [SerializeField] private GameObject surrenderWindow;
     [SerializeField] private TextMeshProUGUI endGameTitle;
     [SerializeField] private TextMeshProUGUI endGameText;
     [SerializeField] private TextMeshProUGUI waitingText;
     [SerializeField] private TextMeshProUGUI opponentLeftText;
     [SerializeField] private Button rematchButton;
     [SerializeField] private Button quitButton;
-    [SerializeField] private GameObject rematchRequestWindow;
     [SerializeField] private Button acceptRematchButton;
     [SerializeField] private Button rejectRematchButton;
+    [SerializeField] private Button surrenderButton;
+    [SerializeField] private Button acceptSurrenderButton;
+    [SerializeField] private Button declineSurrenderButton;
 
     private GameManager gameManager;
 
@@ -48,6 +52,7 @@ public class GameUIManager : NetworkBehaviour
         endGameWindow.gameObject.SetActive(false);
         timersUI.SetActive(true);
         loadingUI.SetActive(false);
+        surrenderButton.gameObject.SetActive(true);
     }
 
     private void BoardManager_OnEndGame(string title, string text) {
@@ -70,12 +75,25 @@ public class GameUIManager : NetworkBehaviour
         rejectRematchButton.onClick.AddListener(() => {
             RejectRematch();
         });
+
+        surrenderButton.onClick.AddListener(() => {
+            OpenSurrenderWindow();
+        });
+
+        acceptSurrenderButton.onClick.AddListener(() => {
+            AcceptSurrender();
+        });
+
+        declineSurrenderButton.onClick.AddListener(() => {
+            CloseSurrenderWindow();
+        });
     }
 
     private void SetDefaultValues() {
         endGameWindow.gameObject.SetActive(false);
         timersUI.SetActive(false);
         loadingUI.SetActive(true);
+        surrenderButton.gameObject.SetActive(false);
     }
 
     private void ResetEndGameWindow() {
@@ -84,6 +102,7 @@ public class GameUIManager : NetworkBehaviour
         waitingText.gameObject.SetActive(false);
         opponentLeftText.gameObject.SetActive(false);
         rematchRequestWindow.SetActive(false);
+        surrenderWindow.SetActive(false);
     }
 
     private void RequestRematch() {
@@ -110,6 +129,18 @@ public class GameUIManager : NetworkBehaviour
     private void QuitToMainMenu() {
         NetworkManager.Singleton.Shutdown();
         Loader.Load(Loader.Scene.MainMenuScene);
+    }
+
+    private void OpenSurrenderWindow() {
+        surrenderWindow.SetActive(true);
+    }
+
+    private void CloseSurrenderWindow() {
+        surrenderWindow.SetActive(false);
+    }
+
+    private void AcceptSurrender() {
+        gameManager.TriggerOnSurrender();
     }
 
     public void OpenEndGameWindow(string title, string text) {

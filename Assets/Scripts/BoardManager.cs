@@ -44,6 +44,8 @@ public class BoardManager : NetworkBehaviour
     private Vector2Int pieceEndPosition;
     private Vector2Int lastPawnDoubleStepCapturePosition;
     private Vector2Int lastPawnDoubleStepPosition;
+
+    private PlayerType lastPawnDoubleStepPlayerType;
     
     public event EventHandler OnPieceMove;
     public event Action<string, string> OnEndGame;
@@ -449,24 +451,24 @@ public class BoardManager : NetworkBehaviour
 
     [Rpc(SendTo.ClientsAndHost)]
     private void OnInsufficientMaterialRpc() {
-        string title = "Insufficient Material";
-        string text = "Draw!";
+        string title = "Draw!";
+        string text = "draw due to insufficient material!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
     private void OnStalemateRpc() {
-        string title = "Stalemate";
-        string text = "Draw!";
+        string title = "Draw!";
+        string text = "draw by stalemate";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
     private void OnCheckmateRpc(PlayerType winner) {
-        string title = "Checkmate";
-        string text = $"{winner} won!";
+        string title = gameManager.GetLocalPlayerType() == winner ? "Victory!" : "Defeat!";
+        string text = $"{winner} won by checkmate!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
     }
@@ -650,5 +652,9 @@ public class BoardManager : NetworkBehaviour
 
     public Vector2Int GetLastPawnDoubleStepCapturePosition() {
         return lastPawnDoubleStepCapturePosition;
+    }
+
+    public Piece GetLastPawnDoubleStepPiece() {
+        return piecesOnBoard[lastPawnDoubleStepPosition.x, lastPawnDoubleStepPosition.y];
     }
 }

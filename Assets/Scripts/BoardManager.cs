@@ -251,12 +251,16 @@ public class BoardManager : NetworkBehaviour
                     RequestMoveServerRpc(startDragPosition, targetGridPos, isDragging);
                 }
             } else {
+                if (currentDraggingPiece != null) {
+                    currentDraggingPiece.transform.position = originalPosition;
+                    currentDraggingPiece = null;
+                }
+            }
+        } else {
+            if (currentDraggingPiece != null) {
                 currentDraggingPiece.transform.position = originalPosition;
                 currentDraggingPiece = null;
             }
-        } else {
-            currentDraggingPiece.transform.position = originalPosition;
-            currentDraggingPiece = null;
         }
 
         isDragging = false;
@@ -265,15 +269,17 @@ public class BoardManager : NetworkBehaviour
     private void CheckPromotionClick(int x, int y) {
         PromotionWindowManager promotionWindowManager = promotionWindow.GetComponent<PromotionWindowManager>();
         PromotionPiece selectedPromotionPiece = promotionWindowManager.GetPromotionPiece(x, y);
-        if (selectedPromotionPiece == null) {
-            currentDraggingPiece.transform.position = originalPosition;
-            currentDraggingPiece = null;
+        if (selectedPromotionPiece != null) {
+            int clickedPositionX = Mathf.FloorToInt((promotionWindowManager.transform.position.x + (4 * squareSize)) / squareSize);
+            int clickedPositionY = Mathf.FloorToInt((promotionWindowManager.transform.position.y + (4 * squareSize)) / squareSize);
+            Vector2Int clickedPosition = new Vector2Int(clickedPositionX, clickedPositionY);
+            RequestMoveServerRpc(selectedPiecePosition, clickedPosition, isDragging, selectedPromotionPiece.GetPieceData().name);
             return;
         }
-        int clickedPositionX = Mathf.FloorToInt((promotionWindowManager.transform.position.x + (4 * squareSize)) / squareSize);
-        int clickedPositionY = Mathf.FloorToInt((promotionWindowManager.transform.position.y + (4 * squareSize)) / squareSize);
-        Vector2Int clickedPosition = new Vector2Int(clickedPositionX, clickedPositionY);
-        RequestMoveServerRpc(selectedPiecePosition, clickedPosition, isDragging, selectedPromotionPiece.GetPieceData().name);
+        if (currentDraggingPiece != null) {
+            currentDraggingPiece.transform.position = originalPosition;
+            currentDraggingPiece = null;
+        }
     }
 
     private void ShowPossibleMoves(Piece clickedPiece, Vector2Int clickedPosition) {
@@ -298,8 +304,10 @@ public class BoardManager : NetworkBehaviour
             UpdateMovePositionsRpc(start, target, pieceDataName, isDragging);
             return;
         }
-        currentDraggingPiece.transform.position = originalPosition;
-        currentDraggingPiece = null;
+        if (currentDraggingPiece != null) {
+            currentDraggingPiece.transform.position = originalPosition;
+            currentDraggingPiece = null;
+        }
     }
 
     private bool IsValidMove(Vector2Int start, Vector2Int target) {

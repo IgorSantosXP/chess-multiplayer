@@ -39,13 +39,16 @@ public class BoardManager : NetworkBehaviour
     private bool isPromotionWindowOpen;
     private bool isGameRunning;
 
+    private bool isDragging = false;
+    private Piece currentDraggingPiece;
+    private Vector2Int startDragPosition;
+    private Vector3 originalPosition;
+
     private Vector2Int selectedPiecePosition;
     private Vector2Int pieceStartPosition;
     private Vector2Int pieceEndPosition;
     private Vector2Int lastPawnDoubleStepCapturePosition;
     private Vector2Int lastPawnDoubleStepPosition;
-
-    private PlayerType lastPawnDoubleStepPlayerType;
     
     public event EventHandler OnPieceMove;
     public event Action<string, string> OnEndGame;
@@ -60,6 +63,21 @@ public class BoardManager : NetworkBehaviour
         gameManager = GameManager.Instance;
         gameManager.OnGameStarted += GameManager_OnGameStarted;
         gameManager.OnEndGame += GameManager_OnEndGame;
+    }
+
+    void Update() {
+        if (!isGameRunning) return;
+        if (Input.GetMouseButtonDown(0)) {
+            DetectSquareClick();
+        }
+
+        if (isDragging) {
+            DuringDrag();
+        }
+
+        if (Input.GetMouseButtonUp(0)) {
+            EndDrag();
+        }
     }
 
     private void GameManager_OnEndGame(string title, string text) {
@@ -155,48 +173,54 @@ public class BoardManager : NetworkBehaviour
         captureHintOverlays[x, y] = overlay;
     }
 
-    void Update() {
-        if (!isGameRunning) return;
-        if (Input.GetMouseButtonDown(0))
-        {
-            DetectSquareClick();
-        }
+    private Vector2Int GetGridPosition(Vector2 worldPosition) {
+        int x = Mathf.FloorToInt((worldPosition.x + (4 * squareSize)) / squareSize);
+        int y = Mathf.FloorToInt((worldPosition.y + (4 * squareSize)) / squareSize);
+        return new Vector2Int(x, y);
+    }
+
+    private bool IsOutOfBoard(Vector2Int gridPos) {
+        if (gridPos.x < 0 || gridPos.x >= boardLength || gridPos.y < 0 || gridPos.y >= boardLength) return true;
+        return false;
     }
 
     void DetectSquareClick() {
-        Vector2 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        int x = Mathf.FloorToInt((worldPosition.x + (4 * squareSize)) / squareSize);
-        int y = Mathf.FloorToInt((worldPosition.y + (4 * squareSize)) / squareSize);
+        Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2Int gridPos = GetGridPosition(mouseWorldPos);
 
         if (isPromotionWindowOpen) {
-            CheckPromotionClick(x, y);
+            CheckPromotionClick(gridPos.x, gridPos.y);
         }
 
         DestroyPromotionWindow();
         ClearHighLightedHint();
         ClearHighLightedCaptureHint();
-        if (x >= 0 && x < boardLength && y >= 0 && y < boardLength) {
-            Piece clickedPiece = piecesOnBoard[x, y];
-            Vector2Int clickedPosition = new Vector2Int(x, y);
+        if (!IsOutOfBoard(gridPos)) {
+            Piece clickedPiece = piecesOnBoard[gridPos.x, gridPos.y];
             if (clickedPiece != null) {
-                if (!possibleMoves.Contains(clickedPosition)) {
-                    HighlightSelectedSquare(x, y);
+                if (!possibleMoves.Contains(gridPos)) {
+                    HighlightSelectedSquare(gridPos.x, gridPos.y);
                 }
                 if (clickedPiece.GetPieceData().playerType == gameManager.GetLocalPlayerType()) {
-                    ShowPossibleMoves(clickedPiece, clickedPosition);
+                    isDragging = true;
+                    currentDraggingPiece = clickedPiece;
+                    startDragPosition = gridPos;
+                    originalPosition = currentDraggingPiece.transform.position;
+                    ShowPossibleMoves(clickedPiece, gridPos);
+                    currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 21;
                     return;
                 }
             } 
 
             if (gameManager.GetCurrentPlayablePlayerType() == gameManager.GetLocalPlayerType()) {
-                if (possibleMoves.Contains(clickedPosition)) {
+                if (possibleMoves.Contains(gridPos)) {
                     Piece selectedPiece = piecesOnBoard[selectedPiecePosition.x, selectedPiecePosition.y];
                     if (selectedPiece != null) {
                         if (selectedPiece.GetPieceType() == PieceType.Pawn &&
-                            (clickedPosition.y == 7 || clickedPosition.y == 0)) {
-                            ShowPromotionWindow(selectedPiece.GetPieceData().playerType, clickedPosition);
+                            (gridPos.y == 7 || gridPos.y == 0)) {
+                            ShowPromotionWindow(selectedPiece.GetPieceData().playerType, gridPos);
                         } else {
-                            RequestMoveServerRpc(selectedPiecePosition, clickedPosition);
+                            RequestMoveServerRpc(selectedPiecePosition, gridPos, isDragging);
                         }
                     }
                 }
@@ -206,15 +230,50 @@ public class BoardManager : NetworkBehaviour
         possibleMoves.Clear();
     }
 
+    private void DuringDrag() {
+        Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        currentDraggingPiece.transform.position = mouseWorldPos;
+    }
+
+    private void EndDrag() {
+        if (!isDragging) return;
+        if (gameManager.GetCurrentPlayablePlayerType() == gameManager.GetLocalPlayerType()) {
+            currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 20;
+
+            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2Int targetGridPos = GetGridPosition(mouseWorldPos);
+
+            if (possibleMoves.Contains(targetGridPos)) {
+                if (currentDraggingPiece.GetPieceType() == PieceType.Pawn &&
+                    (targetGridPos.y == 7 || targetGridPos.y == 0)) {
+                    ShowPromotionWindow(currentDraggingPiece.GetPieceData().playerType, targetGridPos);
+                } else {
+                    RequestMoveServerRpc(startDragPosition, targetGridPos, isDragging);
+                }
+            } else {
+                currentDraggingPiece.transform.position = originalPosition;
+                currentDraggingPiece = null;
+            }
+        } else {
+            currentDraggingPiece.transform.position = originalPosition;
+            currentDraggingPiece = null;
+        }
+
+        isDragging = false;
+    }
+
     private void CheckPromotionClick(int x, int y) {
         PromotionWindowManager promotionWindowManager = promotionWindow.GetComponent<PromotionWindowManager>();
         PromotionPiece selectedPromotionPiece = promotionWindowManager.GetPromotionPiece(x, y);
-        if (selectedPromotionPiece != null) {
-            int clickedPositionX = Mathf.FloorToInt((promotionWindowManager.transform.position.x + (4 * squareSize)) / squareSize);
-            int clickedPositionY = Mathf.FloorToInt((promotionWindowManager.transform.position.y + (4 * squareSize)) / squareSize);
-            Vector2Int clickedPosition = new Vector2Int(clickedPositionX, clickedPositionY);
-            RequestMoveServerRpc(selectedPiecePosition, clickedPosition, selectedPromotionPiece.GetPieceData().name);
+        if (selectedPromotionPiece == null) {
+            currentDraggingPiece.transform.position = originalPosition;
+            currentDraggingPiece = null;
+            return;
         }
+        int clickedPositionX = Mathf.FloorToInt((promotionWindowManager.transform.position.x + (4 * squareSize)) / squareSize);
+        int clickedPositionY = Mathf.FloorToInt((promotionWindowManager.transform.position.y + (4 * squareSize)) / squareSize);
+        Vector2Int clickedPosition = new Vector2Int(clickedPositionX, clickedPositionY);
+        RequestMoveServerRpc(selectedPiecePosition, clickedPosition, isDragging, selectedPromotionPiece.GetPieceData().name);
     }
 
     private void ShowPossibleMoves(Piece clickedPiece, Vector2Int clickedPosition) {
@@ -230,6 +289,41 @@ public class BoardManager : NetworkBehaviour
             }
             HighlightHint(possibleMove.x, possibleMove.y);
         }
+    }
+
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestMoveServerRpc(Vector2Int start, Vector2Int target, bool isDragging, string pieceDataName = null) {
+        if (IsValidMove(start, target)) {
+            UpdateMovePositionsRpc(start, target, pieceDataName, isDragging);
+            return;
+        }
+        currentDraggingPiece.transform.position = originalPosition;
+        currentDraggingPiece = null;
+    }
+
+    private bool IsValidMove(Vector2Int start, Vector2Int target) {
+        Piece piece = piecesOnBoard[start.x, start.y];
+        possibleMoves = piece.GetPiecePossibleMoves(piecesOnBoard);
+        if (piece.GetPieceData().pieceType == PieceType.King && !piece.GetHasMoved()) {
+            possibleMoves = piece.AddCastlingMoves(piecesOnBoard);
+        }
+        PreventCheck(start, piece.GetPieceData().playerType);
+
+        return possibleMoves.Contains(target);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void UpdateMovePositionsRpc(Vector2Int start, Vector2Int target, string pieceDataName, bool isDragging) {
+        Piece piece = piecesOnBoard[start.x, start.y];
+
+        if (piece.GetPieceData().pieceType == PieceType.King && Math.Abs(target.x - start.x) == 2) {
+            int y = piece.GetPieceData().playerType == PlayerType.White ? 0 : 7;
+            int rookStartX = target.x > 4 ? 7 : 0;
+            int rookTargetX = target.x > 4 ? 5 : 3;
+            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, isDragging));
+        }
+        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
     }
 
     private void PreventCheck(Vector2Int movingPiecePosition, PlayerType playerType) {
@@ -283,38 +377,7 @@ public class BoardManager : NetworkBehaviour
         return enemyPieces;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    private void RequestMoveServerRpc(Vector2Int start, Vector2Int target, string pieceDataName = null) {
-        if (IsValidMove(start, target)) {
-            UpdateMovePositionsRpc(start, target, pieceDataName);
-        }
-    }
-
-    private bool IsValidMove(Vector2Int start, Vector2Int target) {
-        Piece piece = piecesOnBoard[start.x, start.y];
-        possibleMoves = piece.GetPiecePossibleMoves(piecesOnBoard);
-        if (piece.GetPieceData().pieceType == PieceType.King && !piece.GetHasMoved()) {
-            possibleMoves = piece.AddCastlingMoves(piecesOnBoard);
-        }
-        PreventCheck(start, piece.GetPieceData().playerType);
-
-        return possibleMoves.Contains(target);
-    }
-
-    [Rpc(SendTo.ClientsAndHost)]
-    private void UpdateMovePositionsRpc(Vector2Int start, Vector2Int target, string pieceDataName) {
-        Piece piece = piecesOnBoard[start.x, start.y];
-
-        if (piece.GetPieceData().pieceType == PieceType.King && Math.Abs(target.x - start.x) == 2) {
-            int y = piece.GetPieceData().playerType == PlayerType.White ? 0 : 7;
-            int rookStartX = target.x > 4 ? 7 : 0;
-            int rookTargetX = target.x > 4 ? 5 : 3;
-            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName));
-        }
-        StartCoroutine(MoveToPosition(start, target, false, pieceDataName));
-    }
-
-    IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName) {
+    IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName, bool isDragging) {
         HighLightMovedPiece(startPosition, targetPosition);
         Piece piece = piecesOnBoard[startPosition.x, startPosition.y];
         piece.MoveTo(targetPosition);
@@ -323,10 +386,12 @@ public class BoardManager : NetworkBehaviour
         float elapsedTime = 0f;
         float duration = 0.18f;
 
-        while (elapsedTime < duration) {
-            piece.transform.position = Vector2.Lerp(start, target, elapsedTime / duration);
-            elapsedTime += Time.deltaTime;
-            yield return null;
+        if (!(gameManager.GetLocalPlayerType() == gameManager.GetCurrentPlayablePlayerType() && isDragging)) {
+            while (elapsedTime < duration) {
+                piece.transform.position = Vector2.Lerp(start, target, elapsedTime / duration);
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
         }
         piece.transform.position = target;
 

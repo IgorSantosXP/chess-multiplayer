@@ -323,13 +323,14 @@ public class BoardManager : NetworkBehaviour
 
     [Rpc(SendTo.ClientsAndHost)]
     private void UpdateMovePositionsRpc(Vector2Int start, Vector2Int target, string pieceDataName, bool isDragging) {
+        selectedPiecePosition = new Vector2Int();
         Piece piece = piecesOnBoard[start.x, start.y];
 
         if (piece.GetPieceData().pieceType == PieceType.King && Math.Abs(target.x - start.x) == 2) {
             int y = piece.GetPieceData().playerType == PlayerType.White ? 0 : 7;
             int rookStartX = target.x > 4 ? 7 : 0;
             int rookTargetX = target.x > 4 ? 5 : 3;
-            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, isDragging));
+            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false));
         }
         StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
     }
@@ -631,7 +632,6 @@ public class BoardManager : NetworkBehaviour
             selectedPiecePosition = new Vector2Int(x, y);
             squareOverlays[x, y].SetActive(true);
         }
-        
     }
 
     void HighlightHint(int x, int y) {

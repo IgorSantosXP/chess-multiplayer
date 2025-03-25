@@ -52,6 +52,7 @@ public class BoardManager : NetworkBehaviour
     
     public event EventHandler OnPieceMove;
     public event Action<string, string> OnEndGame;
+    public event Action<PlayerType, PieceType> OnPieceCaptured;
 
     private void Awake() {
         Instance = this;
@@ -440,6 +441,7 @@ public class BoardManager : NetworkBehaviour
             }
 
             if (targetPiece != null && piece.GetPlayerType() != targetPiece.GetPlayerType()) {
+                TriggerOnPieceCapturedRpc(targetPiece.GetPlayerType(), targetPiece.GetPieceType());
                 NetworkObject targetObj = targetPiece.GetComponent<NetworkObject>();
                 targetObj.Despawn();
             }
@@ -453,6 +455,11 @@ public class BoardManager : NetworkBehaviour
 
 
         CheckEndGame(piece.GetPlayerType());
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerOnPieceCapturedRpc(PlayerType playerType, PieceType pieceType) {
+        OnPieceCaptured?.Invoke(playerType, pieceType);
     }
 
     private void CheckEndGame(PlayerType actualPlayerType) {

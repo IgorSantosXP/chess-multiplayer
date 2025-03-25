@@ -4,7 +4,6 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using static System.Net.Mime.MediaTypeNames;
 
 public class GameUIManager : NetworkBehaviour
 {
@@ -15,6 +14,8 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private GameObject loadingUI;
     [SerializeField] private GameObject rematchRequestWindow;
     [SerializeField] private GameObject surrenderWindow;
+    [SerializeField] private GameObject currentCapturedPieces;
+    [SerializeField] private GameObject opponentCapturedPieces;
     [SerializeField] private TextMeshProUGUI endGameTitle;
     [SerializeField] private TextMeshProUGUI endGameText;
     [SerializeField] private TextMeshProUGUI waitingText;
@@ -28,6 +29,7 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private Button declineSurrenderButton;
 
     private GameManager gameManager;
+    private BoardManager boardManager;
 
     private void Awake() {
         Instance = this;
@@ -37,10 +39,56 @@ public class GameUIManager : NetworkBehaviour
         SetButtons();
         ResetEndGameWindow();
         SetDefaultValues();
+        boardManager = BoardManager.Instance;
+        boardManager.OnEndGame += BoardManager_OnEndGame;
+        boardManager.OnPieceCaptured += BoardManager_OnPieceCaptured;
         gameManager = GameManager.Instance;
-        BoardManager.Instance.OnEndGame += BoardManager_OnEndGame;
         gameManager.OnGameStarted += GameManager_OnGameStarted;
         gameManager.OnEndGame += GameManager_OnEndGame;
+    }
+
+    private void BoardManager_OnPieceCaptured(PlayerType playerType, PieceType pieceType) {
+        if (playerType == gameManager.GetLocalPlayerType()) {
+            foreach (Transform child in opponentCapturedPieces.transform) {
+                CapturedPiece capturedPiece = child.GetComponent<CapturedPiece>();
+                if (capturedPiece != null && capturedPiece.GetPieceType() == pieceType) {
+                    capturedPiece.IncreasePieceCount();
+                    int pieceCount = capturedPiece.GetPieceCount();
+                    Sprite capturedPieceSprite = Resources.Load<Sprite>($"CapturedPieceSprites/{playerType}{pieceType}_{pieceCount}");
+                    if (capturedPieceSprite != null) {
+                        RectTransform rectTransform = child.GetComponent<RectTransform>();
+                        float fixedHeight = rectTransform.sizeDelta.y;
+                        float aspectRatio = capturedPieceSprite.rect.width / capturedPieceSprite.rect.height;
+                        float newWidth = (fixedHeight * aspectRatio) + 2;
+                        rectTransform.sizeDelta = new Vector2(newWidth, fixedHeight);
+
+                        Image capturedPieceImage = child.GetComponent<Image>();
+                        capturedPieceImage.sprite = capturedPieceSprite;
+                        child.gameObject.SetActive(true);
+                    }
+                }
+            }
+            return;
+        }
+        foreach (Transform child in currentCapturedPieces.transform) {
+            CapturedPiece capturedPiece = child.GetComponent<CapturedPiece>();
+            if (capturedPiece != null && capturedPiece.GetPieceType() == pieceType) {
+                capturedPiece.IncreasePieceCount();
+                int pieceCount = capturedPiece.GetPieceCount();
+                Sprite capturedPieceSprite = Resources.Load<Sprite>($"CapturedPieceSprites/{playerType}{pieceType}_{pieceCount}");
+                if (capturedPieceSprite != null) {
+                    RectTransform rectTransform = child.GetComponent<RectTransform>();
+                    float fixedHeight = rectTransform.sizeDelta.y;
+                    float aspectRatio = capturedPieceSprite.rect.width / capturedPieceSprite.rect.height;
+                    float newWidth = (fixedHeight * aspectRatio) + 2;
+                    rectTransform.sizeDelta = new Vector2(newWidth, fixedHeight);
+                    Image capturedPieceImage = child.GetComponent<Image>();
+
+                    capturedPieceImage.sprite = capturedPieceSprite;
+                    child.gameObject.SetActive(true);
+                }
+            }
+        }
     }
 
     private void GameManager_OnEndGame(string title, string text) {
@@ -48,6 +96,7 @@ public class GameUIManager : NetworkBehaviour
     }
 
     private void GameManager_OnGameStarted(object sender, System.EventArgs e) {
+        SetCapturedPieces();
         ResetEndGameWindow();
         endGameWindow.gameObject.SetActive(false);
         timersUI.SetActive(true);
@@ -87,6 +136,24 @@ public class GameUIManager : NetworkBehaviour
         declineSurrenderButton.onClick.AddListener(() => {
             CloseSurrenderWindow();
         });
+    }
+
+    private void SetCapturedPieces() {
+        foreach (Transform child in currentCapturedPieces.transform) {
+            CapturedPiece capturedPiece = child.GetComponent<CapturedPiece>();
+            if (capturedPiece != null) {
+                capturedPiece.ResetPieceCount();
+            }
+            child.gameObject.SetActive(false);
+        }
+
+        foreach (Transform child in opponentCapturedPieces.transform) {
+            CapturedPiece capturedPiece = child.GetComponent<CapturedPiece>();
+            if (capturedPiece != null) {
+                capturedPiece.ResetPieceCount();
+            }
+            child.gameObject.SetActive(false);
+        }
     }
 
     private void SetDefaultValues() {

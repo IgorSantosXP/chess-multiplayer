@@ -816,7 +816,7 @@ GameObject:
   - component: {fileID: 266233011}
   - component: {fileID: 266233010}
   m_Layer: 5
-  m_Name: WhitePlayerProfile
+  m_Name: CurrentPlayerProfile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3621,7 +3621,7 @@ GameObject:
   - component: {fileID: 1297374232}
   - component: {fileID: 1297374231}
   m_Layer: 5
-  m_Name: BlackPlayerProfile
+  m_Name: OpponentPlayerProfile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4303,7 +4303,7 @@ GameObject:
   - component: {fileID: 1439696832}
   - component: {fileID: 1439696831}
   m_Layer: 5
-  m_Name: PlayerName
+  m_Name: CurrentPlayerNameText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4575,7 +4575,7 @@ GameObject:
   - component: {fileID: 1515955545}
   - component: {fileID: 1515955544}
   m_Layer: 5
-  m_Name: PlayerName
+  m_Name: OpponentPlayerNameText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5748,10 +5748,13 @@ MonoBehaviour:
   surrenderWindow: {fileID: 866179957}
   currentCapturedPieces: {fileID: 1740886726}
   opponentCapturedPieces: {fileID: 705306098}
+  playersProfileContainer: {fileID: 1898915922}
   endGameTitle: {fileID: 2073334335}
   endGameText: {fileID: 297660182}
   waitingText: {fileID: 169410799}
   opponentLeftText: {fileID: 240842725}
+  currentPlayerNameText: {fileID: 1439696831}
+  opponentPlayerNameText: {fileID: 1515955544}
   rematchButton: {fileID: 1026139556}
   quitButton: {fileID: 1908415668}
   acceptRematchButton: {fileID: 963222024}

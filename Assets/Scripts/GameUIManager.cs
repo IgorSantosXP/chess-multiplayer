@@ -16,10 +16,13 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private GameObject surrenderWindow;
     [SerializeField] private GameObject currentCapturedPieces;
     [SerializeField] private GameObject opponentCapturedPieces;
+    [SerializeField] private GameObject playersProfileContainer;
     [SerializeField] private TextMeshProUGUI endGameTitle;
     [SerializeField] private TextMeshProUGUI endGameText;
     [SerializeField] private TextMeshProUGUI waitingText;
     [SerializeField] private TextMeshProUGUI opponentLeftText;
+    [SerializeField] private TextMeshProUGUI currentPlayerNameText;
+    [SerializeField] private TextMeshProUGUI opponentPlayerNameText;
     [SerializeField] private Button rematchButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private Button acceptRematchButton;
@@ -39,6 +42,7 @@ public class GameUIManager : NetworkBehaviour
         SetButtons();
         ResetEndGameWindow();
         SetDefaultValues();
+        SetPlayerName();
         boardManager = BoardManager.Instance;
         boardManager.OnEndGame += BoardManager_OnEndGame;
         boardManager.OnPieceCaptured += BoardManager_OnPieceCaptured;
@@ -100,6 +104,7 @@ public class GameUIManager : NetworkBehaviour
         ResetEndGameWindow();
         endGameWindow.gameObject.SetActive(false);
         timersUI.SetActive(true);
+        playersProfileContainer.SetActive(true);
         loadingUI.SetActive(false);
         surrenderButton.gameObject.SetActive(true);
     }
@@ -138,6 +143,19 @@ public class GameUIManager : NetworkBehaviour
         });
     }
 
+    private void SetPlayerName() {
+        foreach (PlayerData playerData in ChessMultiplayer.Instance.GetPlayerDataNetworkList())
+        {
+            if (playerData.clientId == NetworkManager.Singleton.LocalClientId) {
+                currentPlayerNameText.text = playerData.playerName.ToString();
+            }
+
+            if (playerData.clientId != NetworkManager.Singleton.LocalClientId) {
+                opponentPlayerNameText.text = playerData.playerName.ToString();
+            }
+        }
+    }
+
     private void SetCapturedPieces() {
         foreach (Transform child in currentCapturedPieces.transform) {
             CapturedPiece capturedPiece = child.GetComponent<CapturedPiece>();
@@ -159,6 +177,7 @@ public class GameUIManager : NetworkBehaviour
     private void SetDefaultValues() {
         endGameWindow.gameObject.SetActive(false);
         timersUI.SetActive(false);
+        playersProfileContainer.SetActive(false);
         loadingUI.SetActive(true);
         surrenderButton.gameObject.SetActive(false);
     }

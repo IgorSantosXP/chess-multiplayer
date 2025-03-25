@@ -27,31 +27,6 @@ public class PromotionWindowManager : MonoBehaviour
         SpawnPieces(playerType);
     }
 
-    void Update() {
-        //if (Input.GetMouseButtonDown(0)) {
-        //    DetectSquareClick();
-        //}
-    }
-
-    void DetectSquareClick() {
-        Vector2 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Debug.Log($"worldPosition: {worldPosition.x}, {worldPosition.y}");
-        Vector2 localPosition = transform.InverseTransformPoint(worldPosition);
-        Debug.Log($"localPosition: {localPosition.x}, {localPosition.y}");
-        int x = 0;
-        int y = Mathf.RoundToInt((localPosition.y / squareSize) * -1);
-        Debug.Log($"x: {x}, y: {y}");
-
-        if (x >= 0 && x < xLength && y >= 0 && y < yLength) {
-            PromotionPiece clickedPromotionPiece = piecesToPromove[x, y];
-            Vector2Int clickedPosition = new Vector2Int(x, y);
-            if (clickedPromotionPiece != null) {
-                Debug.Log($"clickedPieceData: {clickedPromotionPiece.GetPieceData().pieceType}");
-                Debug.Log($"clickedPosition: {clickedPosition}");
-            }
-        }
-    }
-
     private void SetGridSizes() {
         SpriteRenderer boardRenderer = boardTransform.GetComponent<SpriteRenderer>();
         boardSize = boardRenderer.bounds.size.x;
@@ -115,14 +90,11 @@ public class PromotionWindowManager : MonoBehaviour
     public PromotionPiece GetPromotionPiece(int x, int y) {
         int promotionWindowX = Mathf.FloorToInt((transform.position.x + (4 * squareSize)) / squareSize);
         int promotionPieceY = y;
-        Debug.Log($"promotionWindowX: {promotionWindowX}");
-        Debug.Log($"promotionPieceY: {promotionPieceY}");
-        Debug.Log($"x: {x}");
+
         if (promotionWindowX == x) {
             if (GameManager.Instance.GetLocalPlayerType() == PlayerType.White) {
                 promotionPieceY = 3 - (promotionPieceY - 4);
             }
-            Debug.Log($"promotionPieceY2: {promotionPieceY}");
             if (promotionPieceY >= 0 && promotionPieceY < 4) {
                 PromotionPiece promotionPiece = piecesToPromove[0, promotionPieceY];
                 if (promotionPiece != null) {

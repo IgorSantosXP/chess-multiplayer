@@ -220,6 +220,7 @@ public class BoardManager : NetworkBehaviour
                         if (selectedPiece.GetPieceType() == PieceType.Pawn &&
                             (gridPos.y == 7 || gridPos.y == 0)) {
                             ShowPromotionWindow(selectedPiece.GetPieceData().playerType, gridPos);
+                            return;
                         } else {
                             RequestMoveServerRpc(selectedPiecePosition, gridPos, isDragging);
                         }

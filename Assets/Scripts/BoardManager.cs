@@ -203,6 +203,7 @@ public class BoardManager : NetworkBehaviour
                     HighlightSelectedSquare(gridPos.x, gridPos.y);
                 }
                 if (clickedPiece.GetPieceData().playerType == gameManager.GetLocalPlayerType()) {
+                    selectedPiecePosition = new Vector2Int(gridPos.x, gridPos.y);
                     isDragging = true;
                     currentDraggingPiece = clickedPiece;
                     startDragPosition = gridPos;
@@ -314,11 +315,18 @@ public class BoardManager : NetworkBehaviour
 
     private bool IsValidMove(Vector2Int start, Vector2Int target) {
         Piece piece = piecesOnBoard[start.x, start.y];
+        Debug.Log($"IsValidMove piece: {piece.GetPieceType()}");
         possibleMoves = piece.GetPiecePossibleMoves(piecesOnBoard);
+        for (int i = 0; i < possibleMoves.Count; i++) {
+            Debug.Log($"1possibleMoves[{i}] x: {possibleMoves[i].x}, y: {possibleMoves[i].y}");
+        }
         if (piece.GetPieceData().pieceType == PieceType.King && !piece.GetHasMoved()) {
             possibleMoves = piece.AddCastlingMoves(piecesOnBoard);
         }
         PreventCheck(start, piece.GetPieceData().playerType);
+        for (int i = 0; i < possibleMoves.Count; i++) {
+            Debug.Log($"2possibleMoves[{i}] x: {possibleMoves[i].x}, y: {possibleMoves[i].y}");
+        }
 
         return possibleMoves.Contains(target);
     }
@@ -628,14 +636,14 @@ public class BoardManager : NetworkBehaviour
     }
 
     private void removeSelectedSquareOverlay() {
-        if (selectedPiecePosition != null) {
+        if (selectedPiecePosition != pieceEndPosition) {
             squareOverlays[selectedPiecePosition.x, selectedPiecePosition.y].SetActive(false);
-            selectedPiecePosition = new Vector2Int();
         }
     }
 
     void HighlightSelectedSquare(int x, int y) {
         removeSelectedSquareOverlay();
+
         if (pieceEndPosition != new Vector2Int(x, y)) {
             selectedPiecePosition = new Vector2Int(x, y);
             squareOverlays[x, y].SetActive(true);

@@ -82,7 +82,7 @@ public class ChessMultiplayer : NetworkBehaviour
         playerDataNetworkList.Add(new PlayerData {
             clientId = clientId
         });
-        SetPlayerNameServerRpc(PlayerOptionsManager.Instance.GetPlayerName(), "Host");
+        SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName(), "Host");
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
         if (NetworkManager.Singleton.ConnectedClientsList.Count == MAX_PLAYER_AMOUNT) {
             LobbyUIManager.Instance.SetStartButtonActive(true);
@@ -103,7 +103,7 @@ public class ChessMultiplayer : NetworkBehaviour
     private void NetworkManager_Client_OnClientConnectedCallback(ulong clientId) {
         if (isInGameScene) return;
         LobbyUIManager.Instance.SetStartButtonActive(false);
-        SetPlayerNameServerRpc(PlayerOptionsManager.Instance.GetPlayerName(), "client");
+        SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName(), "client");
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
     }
 

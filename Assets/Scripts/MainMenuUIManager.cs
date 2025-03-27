@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 public class MainMenuUIManager : MonoBehaviour
 {
+    public static MainMenuUIManager Instance { get; private set; }
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject optionsMenu;
     [SerializeField] private GameObject playerOptionsMenu;
@@ -14,7 +15,13 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private Button soundOptionsButton;
     [SerializeField] private Button backToOptionsButton;
     [SerializeField] private Button backToMainMenuButton;
+    [SerializeField] private Button uploadImageButton;
     [SerializeField] private TMP_InputField playerNameInput;
+    [SerializeField] private Image profileImage;
+
+    private void Awake() {
+        Instance = this;
+    }
 
     private void Start() {
         SetDefaultValues();
@@ -58,9 +65,13 @@ public class MainMenuUIManager : MonoBehaviour
             mainMenu.SetActive(true);
         });
 
-        playerNameInput.text = PlayerOptionsManager.Instance.GetPlayerName();
+        uploadImageButton.onClick.AddListener(() => {
+            ProfileManager.Instance.OpenImagePicker();
+        });
+
+        playerNameInput.text = ProfileManager.Instance.GetPlayerName();
         playerNameInput.onValueChanged.AddListener((string newText) => {
-            PlayerOptionsManager.Instance.SetPlayerName(newText);
+            ProfileManager.Instance.SetPlayerName(newText);
         });
     }
 
@@ -68,5 +79,9 @@ public class MainMenuUIManager : MonoBehaviour
         mainMenu.SetActive(true);
         optionsMenu.SetActive(false);
         playerOptionsMenu.SetActive(false);
+    }
+
+    public void SetProfileImage(Sprite newSprite) {
+        profileImage.sprite = newSprite;
     }
 }

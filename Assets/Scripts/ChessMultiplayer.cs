@@ -11,10 +11,7 @@ public class ChessMultiplayer : NetworkBehaviour
     public static ChessMultiplayer Instance { get; private set; }
 
     public const int MAX_PLAYER_AMOUNT = 2;
-    private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PlayerNameMultiplayer";
-
     private NetworkList<PlayerData> playerDataNetworkList;
-    private string playerName;
     private bool isInGameScene;
     private NetworkVariable<int> gameTimer = new NetworkVariable<int>(180, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -25,9 +22,6 @@ public class ChessMultiplayer : NetworkBehaviour
         Instance = this;
         isInGameScene = false;
 
-        DontDestroyOnLoad(gameObject);
-
-        playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "PlayerName" + UnityEngine.Random.Range(100, 1000));
         playerDataNetworkList = new NetworkList<PlayerData>();
         playerDataNetworkList.OnListChanged += PlayerDataNetworkList_OnListChanged;
         SceneManager.activeSceneChanged += OnSceneChanged;
@@ -88,7 +82,7 @@ public class ChessMultiplayer : NetworkBehaviour
         playerDataNetworkList.Add(new PlayerData {
             clientId = clientId
         });
-        SetPlayerNameServerRpc(GetPlayerName(), "Host");
+        SetPlayerNameServerRpc(PlayerOptionsManager.Instance.GetPlayerName(), "Host");
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
         if (NetworkManager.Singleton.ConnectedClientsList.Count == MAX_PLAYER_AMOUNT) {
             LobbyUIManager.Instance.SetStartButtonActive(true);
@@ -109,7 +103,7 @@ public class ChessMultiplayer : NetworkBehaviour
     private void NetworkManager_Client_OnClientConnectedCallback(ulong clientId) {
         if (isInGameScene) return;
         LobbyUIManager.Instance.SetStartButtonActive(false);
-        SetPlayerNameServerRpc(GetPlayerName(), "client");
+        SetPlayerNameServerRpc(PlayerOptionsManager.Instance.GetPlayerName(), "client");
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
     }
 
@@ -119,16 +113,6 @@ public class ChessMultiplayer : NetworkBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Client_OnClientDisconnectCallback;
         NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_Client_OnClientConnectedCallback;
         LobbyUIManager.Instance.OpenHostDisconnectWindow();
-    }
-
-    public string GetPlayerName() {
-        return playerName;
-    }
-
-    public void SetPlayerName(string playerName) {
-        this.playerName = playerName;
-
-        PlayerPrefs.SetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, playerName);
     }
 
     [ServerRpc(RequireOwnership = false)]

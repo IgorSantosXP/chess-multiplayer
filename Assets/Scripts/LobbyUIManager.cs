@@ -26,7 +26,6 @@ public class LobbyUIManager : MonoBehaviour
     [SerializeField] private Button hostDisconnectedBackButton;
     [SerializeField] private TMP_InputField lobbyNameInput;
     [SerializeField] private TMP_InputField joinCodeInput;
-    [SerializeField] private TMP_InputField playerNameInput;
     [SerializeField] private Toggle lobbyPrivateToggle;
     [SerializeField] private TMP_Dropdown timerDropdown;
     [SerializeField] private Transform lobbyContainer;
@@ -117,11 +116,6 @@ public class LobbyUIManager : MonoBehaviour
         });
 
         timerDropdown.onValueChanged.AddListener(SetGameTimer);
-
-        playerNameInput.text = ChessMultiplayer.Instance.GetPlayerName();
-        playerNameInput.onValueChanged.AddListener((string newText) => {
-            ChessMultiplayer.Instance.SetPlayerName(newText);
-        });
 
         createButton.onClick.AddListener(() => {
             string lobbyName = lobbyNameInput.text;

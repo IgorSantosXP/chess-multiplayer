@@ -315,17 +315,14 @@ public class BoardManager : NetworkBehaviour
 
     private bool IsValidMove(Vector2Int start, Vector2Int target) {
         Piece piece = piecesOnBoard[start.x, start.y];
-        Debug.Log($"IsValidMove piece: {piece.GetPieceType()}");
         possibleMoves = piece.GetPiecePossibleMoves(piecesOnBoard);
         for (int i = 0; i < possibleMoves.Count; i++) {
-            Debug.Log($"1possibleMoves[{i}] x: {possibleMoves[i].x}, y: {possibleMoves[i].y}");
         }
         if (piece.GetPieceData().pieceType == PieceType.King && !piece.GetHasMoved()) {
             possibleMoves = piece.AddCastlingMoves(piecesOnBoard);
         }
         PreventCheck(start, piece.GetPieceData().playerType);
         for (int i = 0; i < possibleMoves.Count; i++) {
-            Debug.Log($"2possibleMoves[{i}] x: {possibleMoves[i].x}, y: {possibleMoves[i].y}");
         }
 
         return possibleMoves.Contains(target);

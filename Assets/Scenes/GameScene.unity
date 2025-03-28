@@ -5755,6 +5755,8 @@ MonoBehaviour:
   opponentLeftText: {fileID: 240842725}
   currentPlayerNameText: {fileID: 1439696831}
   opponentPlayerNameText: {fileID: 1515955544}
+  currentPlayerImage: {fileID: 688125118}
+  opponentPlayerImage: {fileID: 1042487250}
   rematchButton: {fileID: 1026139556}
   quitButton: {fileID: 1908415668}
   acceptRematchButton: {fileID: 963222024}

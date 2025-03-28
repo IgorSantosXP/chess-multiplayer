@@ -276,4 +276,13 @@ public class GameManager : NetworkBehaviour
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
     }
+
+    public Sprite FormatPlayerImageBase64(string base64Image) {
+        byte[] imageData = Convert.FromBase64String(base64Image);
+        Texture2D texture = new Texture2D(2, 2);
+        texture.LoadImage(imageData);
+        Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * 0.5f);
+
+        return sprite;
+    }
 }

@@ -23,6 +23,8 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI opponentLeftText;
     [SerializeField] private TextMeshProUGUI currentPlayerNameText;
     [SerializeField] private TextMeshProUGUI opponentPlayerNameText;
+    [SerializeField] private Image currentPlayerImage;
+    [SerializeField] private Image opponentPlayerImage;
     [SerializeField] private Button rematchButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private Button acceptRematchButton;
@@ -38,7 +40,7 @@ public class GameUIManager : NetworkBehaviour
         Instance = this;
     }
 
-    private void Start() {
+    public override void OnNetworkSpawn() {
         SetButtons();
         ResetEndGameWindow();
         SetDefaultValues();
@@ -49,6 +51,7 @@ public class GameUIManager : NetworkBehaviour
         gameManager = GameManager.Instance;
         gameManager.OnGameStarted += GameManager_OnGameStarted;
         gameManager.OnEndGame += GameManager_OnEndGame;
+        SetPlayerImage();
     }
 
     private void BoardManager_OnPieceCaptured(PlayerType playerType, PieceType pieceType) {
@@ -144,14 +147,25 @@ public class GameUIManager : NetworkBehaviour
     }
 
     private void SetPlayerName() {
-        foreach (PlayerData playerData in ChessMultiplayer.Instance.GetPlayerDataNetworkList())
-        {
+        foreach (PlayerData playerData in ChessMultiplayer.Instance.GetPlayerDataNetworkList()) {
             if (playerData.clientId == NetworkManager.Singleton.LocalClientId) {
                 currentPlayerNameText.text = playerData.playerName.ToString();
             }
 
             if (playerData.clientId != NetworkManager.Singleton.LocalClientId) {
                 opponentPlayerNameText.text = playerData.playerName.ToString();
+            }
+        }
+    }
+
+    private void SetPlayerImage() {
+        foreach (PlayerData playerData in ChessMultiplayer.Instance.GetPlayerDataNetworkList()) {
+            if (playerData.clientId == NetworkManager.Singleton.LocalClientId) {
+                currentPlayerImage.sprite = gameManager.FormatPlayerImageBase64(playerData.playerImageBase64.ToString());
+            }
+
+            if (playerData.clientId != NetworkManager.Singleton.LocalClientId) {
+                opponentPlayerImage.sprite = gameManager.FormatPlayerImageBase64(playerData.playerImageBase64.ToString());
             }
         }
     }

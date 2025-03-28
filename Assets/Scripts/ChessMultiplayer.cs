@@ -20,6 +20,7 @@ public class ChessMultiplayer : NetworkBehaviour
 
     private void Awake() {
         Instance = this;
+        DontDestroyOnLoad(gameObject);
         isInGameScene = false;
 
         playerDataNetworkList = new NetworkList<PlayerData>();
@@ -82,7 +83,8 @@ public class ChessMultiplayer : NetworkBehaviour
         playerDataNetworkList.Add(new PlayerData {
             clientId = clientId
         });
-        SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName(), "Host");
+        SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
+        SetPlayerImageBase64ServerRpc(ProfileManager.Instance.GetBase64Image());
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
         if (NetworkManager.Singleton.ConnectedClientsList.Count == MAX_PLAYER_AMOUNT) {
             LobbyUIManager.Instance.SetStartButtonActive(true);
@@ -103,7 +105,8 @@ public class ChessMultiplayer : NetworkBehaviour
     private void NetworkManager_Client_OnClientConnectedCallback(ulong clientId) {
         if (isInGameScene) return;
         LobbyUIManager.Instance.SetStartButtonActive(false);
-        SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName(), "client");
+        SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
+        SetPlayerImageBase64ServerRpc(ProfileManager.Instance.GetBase64Image());
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
     }
 
@@ -116,12 +119,23 @@ public class ChessMultiplayer : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SetPlayerNameServerRpc(string playerName, string daonde, ServerRpcParams serverRpcParams = default) {
+    private void SetPlayerNameServerRpc(string playerName, ServerRpcParams serverRpcParams = default) {
         int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
 
         PlayerData playerData = playerDataNetworkList[playerDataIndex];
 
         playerData.playerName = playerName;
+
+        playerDataNetworkList[playerDataIndex] = playerData;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetPlayerImageBase64ServerRpc(string base64Image, ServerRpcParams serverRpcParams = default) {
+        int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
+
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+
+        playerData.playerImageBase64 = base64Image;
 
         playerDataNetworkList[playerDataIndex] = playerData;
     }

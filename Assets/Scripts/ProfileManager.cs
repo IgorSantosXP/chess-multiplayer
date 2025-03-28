@@ -1,6 +1,8 @@
 using SFB;
+using System.Buffers.Text;
 using System.Collections;
 using System.IO;
+using TMPro;
 using UnityEngine;
 
 public class ProfileManager : MonoBehaviour
@@ -10,6 +12,7 @@ public class ProfileManager : MonoBehaviour
     private string playerName;
     private Sprite profileSprite;
     private string savedImagePath;
+    private string base64Image;
 
     private void Awake() {
         Instance = this;
@@ -31,8 +34,8 @@ public class ProfileManager : MonoBehaviour
         PlayerPrefs.SetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, playerName);
     }
 
-    public Sprite GetProfileSprite() {
-        return profileSprite;
+    public string GetBase64Image() {
+        return base64Image;
     }
 
     public void OpenImagePicker() {
@@ -43,22 +46,28 @@ public class ProfileManager : MonoBehaviour
         var paths = StandaloneFileBrowser.OpenFilePanel("Select a image", "", extensions, false);
 
         if (paths.Length > 0 && !string.IsNullOrEmpty(paths[0])) {
-            StartCoroutine(LoadImage(paths[0]));
+            StartCoroutine(ProcessImage(paths[0]));
         }
     }
 
-    private IEnumerator LoadImage(string path) {
+    private IEnumerator ProcessImage(string path) {
         byte[] imageData = File.ReadAllBytes(path);
-
         Texture2D texture = new Texture2D(2, 2);
         texture.LoadImage(imageData);
 
-        Sprite sprite = Sprite.Create(
-            texture,
-            new Rect(0, 0, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f)
-        );
+        Texture2D resized = ResizeTextureGPU(texture, 128, 128);
 
+        byte[] jpgData = ImageConversion.EncodeToJPG(resized, quality: 75);
+        string base64 = System.Convert.ToBase64String(jpgData);
+
+        if (base64.Length > 4096) {
+            Debug.Log("Base64 excede 4096 bytes! Reduza o tamanho da imagem.");
+            yield break;
+        }
+
+        base64Image = base64;
+
+        Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), Vector2.one * 0.5f);
         MainMenuUIManager.Instance.SetProfileImage(sprite);
         profileSprite = sprite;
 
@@ -68,8 +77,24 @@ public class ProfileManager : MonoBehaviour
         yield return null;
     }
 
+    Texture2D ResizeTextureGPU(Texture2D source, int newWidth, int newHeight) {
+        RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight);
+        rt.filterMode = FilterMode.Bilinear;
+
+        Graphics.Blit(source, rt);
+
+        Texture2D resizedTexture = new Texture2D(newWidth, newHeight);
+        RenderTexture.active = rt;
+        resizedTexture.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
+        resizedTexture.Apply();
+
+        RenderTexture.ReleaseTemporary(rt);
+        RenderTexture.active = null;
+
+        return resizedTexture;
+    }
+
     private void LoadSavedImage() {
-        Debug.Log($"Application.persistentDataPath: {Application.persistentDataPath}");
         savedImagePath = Path.Combine(Application.persistentDataPath, "profile_image.png");
 
         if (File.Exists(savedImagePath)) {
@@ -77,7 +102,19 @@ public class ProfileManager : MonoBehaviour
             Texture2D texture = new Texture2D(2, 2);
             texture.LoadImage(imageData);
 
-            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            Texture2D resized = ResizeTextureGPU(texture, 128, 128);
+
+            byte[] jpgData = ImageConversion.EncodeToJPG(resized, quality: 75);
+            string base64 = System.Convert.ToBase64String(jpgData);
+
+            if (base64.Length > 4096) {
+                Debug.Log("Base64 excede 4096 bytes! Reduza o tamanho da imagem.");
+                return;
+            }
+
+            base64Image = base64;
+
+            Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), new Vector2(0.5f, 0.5f));
             profileSprite = sprite;
 
             MainMenuUIManager.Instance.SetProfileImage(sprite);

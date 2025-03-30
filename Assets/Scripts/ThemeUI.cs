@@ -14,7 +14,11 @@ public class ThemeUI : MonoBehaviour
         });
     }
 
-    public void SetCheckMark(bool isActive) {
-        checkMarkTheme.SetActive(isActive);
+    private void OnEnable() {
+        if (ProfileManager.Instance.GetPlayerTheme() == playerTheme) {
+            checkMarkTheme.SetActive(true);
+            return;
+        }
+        checkMarkTheme.SetActive(false);
     }
 }

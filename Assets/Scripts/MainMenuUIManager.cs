@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.UI;
 
 public class MainMenuUIManager : MonoBehaviour
@@ -21,6 +22,10 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private Button closeThemeMenuButton;
     [SerializeField] private TMP_InputField playerNameInput;
     [SerializeField] private Image profileImage;
+    [SerializeField] private Image cardThemeBackground;
+    [SerializeField] private Image cardThemeBoard;
+    [SerializeField] private Image cardThemePieces;
+    [SerializeField] private TextMeshProUGUI cardThemeText;
     [SerializeField] private SpriteRenderer backgroundGame;
     [SerializeField] private SpriteRenderer boardGame;
 
@@ -103,7 +108,18 @@ public class MainMenuUIManager : MonoBehaviour
 
             backgroundGame.sprite = backgroundSprite;
             boardGame.sprite = boardSprite;
+
+            Sprite cardBackgroundSprite = Resources.Load<Sprite>($"CardThemes/{playerTheme}/Background");
+            Sprite cardBoardSprite = Resources.Load<Sprite>($"CardThemes/{playerTheme}/Board");
+            Sprite cardPiecesSprite = Resources.Load<Sprite>($"CardThemes/{playerTheme}/Pieces");
+
+            cardThemeBackground.sprite = cardBackgroundSprite;
+            cardThemeBoard.sprite = cardBoardSprite;
+            cardThemePieces.sprite = cardPiecesSprite;
+            cardThemeText.text = playerTheme.ToString();
         }
+
+        
     }
 
     public void SetProfileImage(Sprite newSprite) {

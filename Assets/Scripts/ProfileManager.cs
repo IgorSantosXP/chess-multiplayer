@@ -11,7 +11,7 @@ public enum PlayerTheme {
     None,
     Classic,
     BubbleGum,
-    EightBits,
+    Nature,
     Space
 }
 

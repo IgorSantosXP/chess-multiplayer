@@ -5,7 +5,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewChessPiece", menuName = "Chess/Piece Data")]
 public class PieceData : ScriptableObject
 {
-    public Sprite sprite;
     public PieceType pieceType;
     public PlayerType playerType;
     public Vector2Int[] possibleSpawns;

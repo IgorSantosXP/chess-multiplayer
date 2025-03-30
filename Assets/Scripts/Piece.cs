@@ -264,7 +264,8 @@ public class Piece : NetworkBehaviour
     [Rpc(SendTo.ClientsAndHost)]
     public void UpdatePieceDataRpc(string pieceDataName) {
         pieceData = Resources.Load<PieceData>($"PieceData/{pieceDataName}");
-        GetComponent<SpriteRenderer>().sprite = pieceData.sprite;
+        PlayerTheme playerTheme = ProfileManager.Instance.GetPlayerTheme();
+        GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>($"Themes/{playerTheme}/Pieces/{pieceData.playerType}{pieceData.pieceType}");
         SetPossibleMoves();
     }
 }

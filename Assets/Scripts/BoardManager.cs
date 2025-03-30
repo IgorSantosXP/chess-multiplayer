@@ -49,6 +49,7 @@ public class BoardManager : NetworkBehaviour
     private Vector2Int pieceEndPosition;
     private Vector2Int lastPawnDoubleStepCapturePosition;
     private Vector2Int lastPawnDoubleStepPosition;
+    private PlayerTheme playerTheme;
     
     public event EventHandler OnPieceMove;
     public event Action<string, string> OnEndGame;
@@ -61,6 +62,7 @@ public class BoardManager : NetworkBehaviour
     void Start() {
         SetBoardSizes();
         CalculateGrid();
+        playerTheme = ProfileManager.Instance.GetPlayerTheme();
         gameManager = GameManager.Instance;
         gameManager.OnGameStarted += GameManager_OnGameStarted;
         gameManager.OnEndGame += GameManager_OnEndGame;
@@ -92,6 +94,8 @@ public class BoardManager : NetworkBehaviour
         if (NetworkManager.Singleton.IsServer) {
             StartCoroutine(ClearAndSetPiecesOnBoardCoroutine());
         }
+        AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.GameStart}");
+        SoundManager.Instance.PlaySound(audioClip);
     }
 
     private void ResetDefaultValues() {
@@ -332,14 +336,23 @@ public class BoardManager : NetworkBehaviour
     private void UpdateMovePositionsRpc(Vector2Int start, Vector2Int target, string pieceDataName, bool isDragging) {
         selectedPiecePosition = new Vector2Int();
         Piece piece = piecesOnBoard[start.x, start.y];
+        Piece targetPiece = piecesOnBoard[target.x, target.y];
+        bool isCapturing = false;
+        bool willCastle = false;
+        if (targetPiece != null && piece.GetPlayerType() != targetPiece.GetPlayerType()) {
+            isCapturing = true;
+        }
 
         if (piece.GetPieceData().pieceType == PieceType.King && Math.Abs(target.x - start.x) == 2) {
             int y = piece.GetPieceData().playerType == PlayerType.White ? 0 : 7;
             int rookStartX = target.x > 4 ? 7 : 0;
             int rookTargetX = target.x > 4 ? 5 : 3;
-            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false));
+            willCastle = true;
+            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false, isCapturing, false));
         }
-        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
+        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging, isCapturing, willCastle));
+
+        
     }
 
     private void PreventCheck(Vector2Int movingPiecePosition, PlayerType playerType) {
@@ -393,7 +406,7 @@ public class BoardManager : NetworkBehaviour
         return enemyPieces;
     }
 
-    IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName, bool isDragging) {
+    IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName, bool isDragging, bool isCapturing, bool willCastle) {
         HighLightMovedPiece(startPosition, targetPosition);
         Piece piece = piecesOnBoard[startPosition.x, startPosition.y];
         piece.MoveTo(targetPosition);
@@ -401,6 +414,18 @@ public class BoardManager : NetworkBehaviour
         Vector2 target = gridPositions[targetPosition.x, targetPosition.y];
         float elapsedTime = 0f;
         float duration = 0.18f;
+        if (!isCastling) {
+            AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.Move}");
+            if (isCapturing) {
+                audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.Capture}");
+            }
+
+            if (willCastle) {
+                audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.Castle}");
+            }
+
+            SoundManager.Instance.PlaySound(audioClip);
+        }
 
         if (!(gameManager.GetLocalPlayerType() == gameManager.GetCurrentPlayablePlayerType() && isDragging)) {
             while (elapsedTime < duration) {

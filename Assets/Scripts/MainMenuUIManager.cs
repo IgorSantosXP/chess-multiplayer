@@ -8,6 +8,7 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject optionsMenu;
     [SerializeField] private GameObject playerOptionsMenu;
+    [SerializeField] private GameObject selectThemeMenu;
     [SerializeField] private Button multiplayerButton;
     [SerializeField] private Button optionsButton;
     [SerializeField] private Button quitButton;
@@ -16,8 +17,12 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private Button backToOptionsButton;
     [SerializeField] private Button backToMainMenuButton;
     [SerializeField] private Button uploadImageButton;
+    [SerializeField] private Button changeThemeButton;
+    [SerializeField] private Button closeThemeMenuButton;
     [SerializeField] private TMP_InputField playerNameInput;
     [SerializeField] private Image profileImage;
+    [SerializeField] private SpriteRenderer backgroundGame;
+    [SerializeField] private SpriteRenderer boardGame;
 
     private void Awake() {
         Instance = this;
@@ -26,6 +31,7 @@ public class MainMenuUIManager : MonoBehaviour
     private void Start() {
         SetDefaultValues();
         SetDefaultListeners();
+        LoadTheme(ProfileManager.Instance.GetPlayerTheme());
     }
 
     private void SetDefaultListeners() {
@@ -69,6 +75,14 @@ public class MainMenuUIManager : MonoBehaviour
             ProfileManager.Instance.OpenImagePicker();
         });
 
+        changeThemeButton.onClick.AddListener(() => {
+            selectThemeMenu.SetActive(true);
+        });
+
+        closeThemeMenuButton.onClick.AddListener(() => {
+            selectThemeMenu.SetActive(false);
+        });
+
         playerNameInput.text = ProfileManager.Instance.GetPlayerName();
         playerNameInput.onValueChanged.AddListener((string newText) => {
             ProfileManager.Instance.SetPlayerName(newText);
@@ -79,9 +93,25 @@ public class MainMenuUIManager : MonoBehaviour
         mainMenu.SetActive(true);
         optionsMenu.SetActive(false);
         playerOptionsMenu.SetActive(false);
+        selectThemeMenu.SetActive(false);
+    }
+
+    private void LoadTheme(PlayerTheme playerTheme) {
+        if (playerTheme != PlayerTheme.None) {
+            Sprite backgroundSprite = Resources.Load<Sprite>($"Themes/{playerTheme}/Background");
+            Sprite boardSprite = Resources.Load<Sprite>($"Themes/{playerTheme}/Board");
+
+            backgroundGame.sprite = backgroundSprite;
+            boardGame.sprite = boardSprite;
+        }
     }
 
     public void SetProfileImage(Sprite newSprite) {
         profileImage.sprite = newSprite;
+    }
+
+    public void SetPlayerTheme(PlayerTheme playerTheme) {
+        selectThemeMenu.SetActive(false);
+        LoadTheme(playerTheme);
     }
 }

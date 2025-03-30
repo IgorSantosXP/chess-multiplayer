@@ -1,15 +1,27 @@
 using SFB;
+using System;
 using System.Buffers.Text;
 using System.Collections;
 using System.IO;
 using TMPro;
 using UnityEngine;
 
+
+public enum PlayerTheme {
+    None,
+    Classic,
+    BubbleGum,
+    EightBits,
+    Space
+}
+
 public class ProfileManager : MonoBehaviour
 {
     public static ProfileManager Instance { get; private set; }
     private const string PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER = "PlayerNameMultiplayer";
+    private const string PLAYER_PREFS_PLAYER_THEME = "PlayerTheme";
     private string playerName;
+    private PlayerTheme playerTheme;
     private Sprite profileSprite;
     private string savedImagePath;
     private string base64Image;
@@ -17,7 +29,14 @@ public class ProfileManager : MonoBehaviour
     private void Awake() {
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "PlayerName" + Random.Range(100, 1000));
+        playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "PlayerName" + UnityEngine.Random.Range(100, 1000));
+        string themeString = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_THEME, PlayerTheme.Classic.ToString());
+
+        if (Enum.TryParse(themeString, out PlayerTheme parsedTheme)) {
+            playerTheme = parsedTheme;
+        } else {
+            playerTheme = PlayerTheme.Classic;
+        }
     }
 
     private void Start() {
@@ -36,6 +55,16 @@ public class ProfileManager : MonoBehaviour
 
     public string GetBase64Image() {
         return base64Image;
+    }
+
+    public void SetPlayerTheme(PlayerTheme playerTheme) {
+        this.playerTheme = playerTheme;
+
+        PlayerPrefs.SetString(PLAYER_PREFS_PLAYER_THEME, playerTheme.ToString());
+    }
+
+    public PlayerTheme GetPlayerTheme() {
+        return playerTheme;
     }
 
     public void OpenImagePicker() {

@@ -31,6 +31,8 @@ public class GameManager : NetworkBehaviour
     private Vector3 currentTimerDefaultPosition;
     private Vector3 opponentTimerDefaultPosition;
 
+    private PlayerTheme playerTheme;
+
     public event Action<string, string> OnEndGame;
 
     private void Awake() {
@@ -39,6 +41,7 @@ public class GameManager : NetworkBehaviour
 
     private void Start() {
         SetTimerDefaultPosition();
+        playerTheme = ProfileManager.Instance.GetPlayerTheme();
         boardManager = BoardManager.Instance;
         boardManager.OnPieceMove += BoardManager_OnPieceMove;
         boardManager.OnEndGame += BoardManager_OnEndGame;
@@ -77,6 +80,8 @@ public class GameManager : NetworkBehaviour
     }
 
     private IEnumerator RunTimer() {
+        bool isWhiteLastSeconds = false;
+        bool isBlackLastSeconds = false;
         SetTimer();
         yield return new WaitForSeconds(1);
         while (isGameRunning) {
@@ -84,6 +89,10 @@ public class GameManager : NetworkBehaviour
                 if (whiteTimeRemaining.Value <= 0) {
                     OnTimeOutRpc(PlayerType.Black, PlayerType.White);
                     yield break;
+                }
+                if (whiteTimeRemaining.Value <= 20 && !isWhiteLastSeconds) {
+                    isWhiteLastSeconds = true;
+                    TriggerOnLastSecondsRpc(PlayerType.White);
                 }
                 whiteTimeRemaining.Value -= 1;
                 UpdateTimerUI();
@@ -93,11 +102,22 @@ public class GameManager : NetworkBehaviour
                     OnTimeOutRpc(PlayerType.White, PlayerType.Black);
                     yield break;
                 }
+                if (whiteTimeRemaining.Value <= 20 && !isBlackLastSeconds) {
+                    isBlackLastSeconds = true;
+                    TriggerOnLastSecondsRpc(PlayerType.Black);
+                }
                 blackTimeRemaining.Value -= 1;
                 UpdateTimerUI();
             }
 
             yield return new WaitForSeconds(1);
+        }
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerOnLastSecondsRpc(PlayerType playerType) {
+        if (localPlayerType == playerType) {
+            PlaySound(BoardSound.LastSeconds);
         }
     }
 
@@ -133,6 +153,7 @@ public class GameManager : NetworkBehaviour
         string text = "";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
+        PlaySound(BoardSound.GameEnd);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
@@ -141,6 +162,7 @@ public class GameManager : NetworkBehaviour
         string text = $"{currentPlayer}'s time is over, {winner} has won!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
+        PlaySound(BoardSound.GameEnd);
     }
 
     private void SetHostRandomPlayerType() {
@@ -264,6 +286,11 @@ public class GameManager : NetworkBehaviour
         GameUIManager.Instance.SetRequestRematch();
     }
 
+    private void PlaySound(BoardSound boardSound) {
+        AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{boardSound}");
+        SoundManager.Instance.PlaySound(audioClip);
+    }
+
     public void TriggerOnSurrender() {
         PlayerType winner = localPlayerType == PlayerType.White ? PlayerType.Black : PlayerType.White;
         OnPlayerSurrenderRpc(winner, localPlayerType);
@@ -275,6 +302,7 @@ public class GameManager : NetworkBehaviour
         string text = $"{currentPlayer} surrendered, {winner} won!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
+        PlaySound(BoardSound.GameEnd);
     }
 
     public Sprite FormatPlayerImageBase64(string base64Image) {

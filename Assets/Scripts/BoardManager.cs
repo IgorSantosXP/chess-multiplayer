@@ -94,8 +94,8 @@ public class BoardManager : NetworkBehaviour
         if (NetworkManager.Singleton.IsServer) {
             StartCoroutine(ClearAndSetPiecesOnBoardCoroutine());
         }
-        AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.GameStart}");
-        SoundManager.Instance.PlaySound(audioClip);
+
+        PlaySound(BoardSound.GameStart);
     }
 
     private void ResetDefaultValues() {
@@ -192,15 +192,18 @@ public class BoardManager : NetworkBehaviour
     void DetectSquareClick() {
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector2Int gridPos = GetGridPosition(mouseWorldPos);
+        bool isPromotingAPiece = false;
 
         if (isPromotionWindowOpen) {
-            CheckPromotionClick(gridPos.x, gridPos.y);
+            if (IsPromotingAPiece(gridPos.x, gridPos.y)) {
+                isPromotingAPiece = true;
+            }
         }
 
         DestroyPromotionWindow();
         ClearHighLightedHint();
         ClearHighLightedCaptureHint();
-        if (!IsOutOfBoard(gridPos)) {
+        if (!IsOutOfBoard(gridPos) && !isPromotingAPiece) {
             Piece clickedPiece = piecesOnBoard[gridPos.x, gridPos.y];
             if (clickedPiece != null) {
                 if (!possibleMoves.Contains(gridPos)) {
@@ -273,7 +276,7 @@ public class BoardManager : NetworkBehaviour
         isDragging = false;
     }
 
-    private void CheckPromotionClick(int x, int y) {
+    private bool IsPromotingAPiece(int x, int y) {
         PromotionWindowManager promotionWindowManager = promotionWindow.GetComponent<PromotionWindowManager>();
         PromotionPiece selectedPromotionPiece = promotionWindowManager.GetPromotionPiece(x, y);
         if (selectedPromotionPiece != null) {
@@ -281,12 +284,13 @@ public class BoardManager : NetworkBehaviour
             int clickedPositionY = Mathf.FloorToInt((promotionWindowManager.transform.position.y + (4 * squareSize)) / squareSize);
             Vector2Int clickedPosition = new Vector2Int(clickedPositionX, clickedPositionY);
             RequestMoveServerRpc(selectedPiecePosition, clickedPosition, isDragging, selectedPromotionPiece.GetPieceData().name);
-            return;
+            return true;
         }
         if (currentDraggingPiece != null) {
             currentDraggingPiece.transform.position = originalPosition;
             currentDraggingPiece = null;
         }
+        return false;
     }
 
     private void ShowPossibleMoves(Piece clickedPiece, Vector2Int clickedPosition) {
@@ -415,16 +419,20 @@ public class BoardManager : NetworkBehaviour
         float elapsedTime = 0f;
         float duration = 0.18f;
         if (!isCastling) {
-            AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.Move}");
+            BoardSound boardSound = BoardSound.Move;
             if (isCapturing) {
-                audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.Capture}");
+                boardSound = BoardSound.Capture;
+            }
+
+            if (!string.IsNullOrEmpty(pieceDataName)) {
+                boardSound = BoardSound.Promote;
             }
 
             if (willCastle) {
-                audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{BoardSound.Castle}");
+                boardSound = BoardSound.Castle;
             }
 
-            SoundManager.Instance.PlaySound(audioClip);
+            PlaySound(boardSound);
         }
 
         if (!(gameManager.GetLocalPlayerType() == gameManager.GetCurrentPlayablePlayerType() && isDragging)) {
@@ -567,6 +575,7 @@ public class BoardManager : NetworkBehaviour
         string text = "draw due to insufficient material!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
+        PlaySound(BoardSound.GameEnd);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
@@ -575,6 +584,7 @@ public class BoardManager : NetworkBehaviour
         string text = "draw by stalemate";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
+        PlaySound(BoardSound.GameEnd);
     }
 
     [Rpc(SendTo.ClientsAndHost)]
@@ -583,6 +593,7 @@ public class BoardManager : NetworkBehaviour
         string text = $"{winner} won by checkmate!";
         isGameRunning = false;
         OnEndGame?.Invoke(title, text);
+        PlaySound(BoardSound.GameEnd);
     }
 
     private bool IsKingInCheck(PlayerType player) {
@@ -663,7 +674,7 @@ public class BoardManager : NetworkBehaviour
         }
     }
 
-    void HighlightSelectedSquare(int x, int y) {
+    private void HighlightSelectedSquare(int x, int y) {
         removeSelectedSquareOverlay();
 
         if (pieceEndPosition != new Vector2Int(x, y)) {
@@ -672,12 +683,12 @@ public class BoardManager : NetworkBehaviour
         }
     }
 
-    void HighlightHint(int x, int y) {
+    private void HighlightHint(int x, int y) {
         hintOverlays[x, y].SetActive(true);
         hintOverlaysArray.Add(hintOverlays[x, y]);
     }
 
-    void HighlightCaptureHint(int x, int y) {
+    private void HighlightCaptureHint(int x, int y) {
         captureHintOverlays[x, y].SetActive(true);
         captureHintOverlaysArray.Add(captureHintOverlays[x, y]);
     }
@@ -693,26 +704,26 @@ public class BoardManager : NetworkBehaviour
         squareOverlays[pieceEndPosition.x, pieceEndPosition.y].SetActive(true);
     }
 
-    void ClearHighLightedSquares() {
+    private void ClearHighLightedSquares() {
         squareOverlays[pieceStartPosition.x, pieceStartPosition.y].SetActive(false);
         squareOverlays[pieceEndPosition.x, pieceEndPosition.y].SetActive(false);
     }
 
-    void ClearHighLightedHint() {
+    private void ClearHighLightedHint() {
         foreach (GameObject hint in hintOverlaysArray) {
             hint.SetActive(false);
         }
         hintOverlaysArray.Clear();
     }
 
-    void ClearHighLightedCaptureHint() {
+    private void ClearHighLightedCaptureHint() {
         foreach (GameObject captureHint in captureHintOverlaysArray) {
             captureHint.SetActive(false);
         }
         captureHintOverlaysArray.Clear();
     }
 
-    void SpawnPieces() {
+    private void SpawnPieces() {
         for (int i = 0; i < whitePieces.Length; i++) {
             foreach (Vector2Int possibleSpawn in whitePieces[i].possibleSpawns) {
                 SpawnPiece(whitePieces[i], possibleSpawn);
@@ -737,7 +748,7 @@ public class BoardManager : NetworkBehaviour
         }
     }
 
-    void SpawnPiece(PieceData data, Vector2Int possibleSpawn) {
+    private void SpawnPiece(PieceData data, Vector2Int possibleSpawn) {
         if (!NetworkManager.Singleton.IsServer) return;
 
         Vector2 position = gridPositions[possibleSpawn.x, possibleSpawn.y];
@@ -750,6 +761,11 @@ public class BoardManager : NetworkBehaviour
         chessPiece.InitializeClientRpc(data.name, possibleSpawn);
 
         piecesOnBoard[possibleSpawn.x, possibleSpawn.y] = chessPiece;
+    }
+
+    private void PlaySound(BoardSound boardSound) {
+        AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{boardSound}");
+        SoundManager.Instance.PlaySound(audioClip);
     }
 
     public Piece GetPieceAtPosition(Vector2Int boardPosition) {

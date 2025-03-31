@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrayNotify;
 
 public class PromotionWindowManager : MonoBehaviour
 {
@@ -71,7 +72,7 @@ public class PromotionWindowManager : MonoBehaviour
             for (int i = 0; i < blackPieces.Length; i++) {
                 SpawnPiece(blackPieces[i], i);
             }
-        }        
+        }
     }
 
     void SpawnPiece(PieceData data, int yPosition) {

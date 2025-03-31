@@ -242,7 +242,9 @@ public class BoardManager : NetworkBehaviour
 
     private void DuringDrag() {
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        currentDraggingPiece.transform.position = mouseWorldPos;
+        if (currentDraggingPiece != null) {
+            currentDraggingPiece.transform.position = mouseWorldPos;
+        }
     }
 
     private void EndDrag() {
@@ -340,27 +342,81 @@ public class BoardManager : NetworkBehaviour
     private void UpdateMovePositionsRpc(Vector2Int start, Vector2Int target, string pieceDataName, bool isDragging) {
         selectedPiecePosition = new Vector2Int();
         Piece piece = piecesOnBoard[start.x, start.y];
-        Piece targetPiece = piecesOnBoard[target.x, target.y];
-        bool isCapturing = false;
-        bool willCastle = false;
-        if (targetPiece != null && piece.GetPlayerType() != targetPiece.GetPlayerType()) {
-            isCapturing = true;
-        }
 
-        if (piece.GetPieceData().pieceType == PieceType.King && Math.Abs(target.x - start.x) == 2) {
-            int y = piece.GetPieceData().playerType == PlayerType.White ? 0 : 7;
+        if (piece.GetPieceType() == PieceType.King && Math.Abs(target.x - start.x) == 2) {
+            int y = piece.GetPlayerType() == PlayerType.White ? 0 : 7;
             int rookStartX = target.x > 4 ? 7 : 0;
             int rookTargetX = target.x > 4 ? 5 : 3;
-            willCastle = true;
-            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false, isCapturing, false));
+            StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false));
         }
-        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging, isCapturing, willCastle));
+        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
+        BoardSound boardSound = GetBoardSound(start, target, !string.IsNullOrEmpty(pieceDataName));
+        PlaySound(boardSound);
+    }
 
-        
+    private BoardSound GetBoardSound(Vector2Int start, Vector2Int target, bool isPromoting) {
+        BoardSound boardSound = BoardSound.Move;
+        Piece piece = piecesOnBoard[start.x, start.y];
+
+        if (piece == null) return BoardSound.None;
+        if (piece.GetPieceType() == PieceType.King && Math.Abs(target.x - start.x) == 2) {
+            boardSound = BoardSound.Castle;
+
+            int y = piece.GetPlayerType() == PlayerType.White ? 0 : 7;
+            int rookStartX = target.x > 4 ? 7 : 0;
+            int rookTargetX = target.x > 4 ? 5 : 3;
+
+            if (WouldCauseCheck(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), piece.GetPlayerType())) {
+                boardSound = BoardSound.MoveCheck;
+            }
+
+            return boardSound;
+        }
+
+        Piece targetPiece = piecesOnBoard[target.x, target.y];
+
+        if (target == lastPawnDoubleStepCapturePosition && piece.GetPieceType() == PieceType.Pawn) {
+            targetPiece = piecesOnBoard[lastPawnDoubleStepPosition.x, lastPawnDoubleStepPosition.y];
+        }
+
+        if (targetPiece != null && piece.GetPlayerType() != targetPiece.GetPlayerType()) {
+            boardSound = BoardSound.Capture;
+        }
+
+        if (isPromoting) {
+            boardSound = BoardSound.Promote;
+        }
+
+        if (WouldCauseCheck(start, target, piece.GetPlayerType())) {
+            boardSound = BoardSound.MoveCheck;
+        }
+
+        return boardSound;
+    }
+
+    private Piece[,] CloneBoard(Piece[,] original) {
+        Piece[,] clone = new Piece[8, 8];
+        for (int x = 0; x < 8; x++) {
+            for (int y = 0; y < 8; y++) {
+                clone[x, y] = original[x, y];
+            }
+        }
+        return clone;
+    }
+
+    private bool WouldCauseCheck(Vector2Int start, Vector2Int target, PlayerType movingPlayer) {
+        Piece[,] simulatedBoard = CloneBoard(piecesOnBoard);
+
+        Piece piece = simulatedBoard[start.x, start.y];
+        simulatedBoard[target.x, target.y] = piece;
+        simulatedBoard[start.x, start.y] = null;
+
+        PlayerType opponent = movingPlayer == PlayerType.White ? PlayerType.Black : PlayerType.White;
+        return IsKingInCheck(opponent, simulatedBoard);
     }
 
     private void PreventCheck(Vector2Int movingPiecePosition, PlayerType playerType) {
-        Vector2Int kingPosition = FindKingPosition(playerType);
+        Vector2Int kingPosition = FindKingPosition(playerType, piecesOnBoard);
         SimulateMoves(kingPosition, movingPiecePosition, possibleMoves);
     }
 
@@ -410,7 +466,7 @@ public class BoardManager : NetworkBehaviour
         return enemyPieces;
     }
 
-    IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName, bool isDragging, bool isCapturing, bool willCastle) {
+    IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName, bool isDragging) {
         HighLightMovedPiece(startPosition, targetPosition);
         Piece piece = piecesOnBoard[startPosition.x, startPosition.y];
         piece.MoveTo(targetPosition);
@@ -418,22 +474,6 @@ public class BoardManager : NetworkBehaviour
         Vector2 target = gridPositions[targetPosition.x, targetPosition.y];
         float elapsedTime = 0f;
         float duration = 0.18f;
-        if (!isCastling) {
-            BoardSound boardSound = BoardSound.Move;
-            if (isCapturing) {
-                boardSound = BoardSound.Capture;
-            }
-
-            if (!string.IsNullOrEmpty(pieceDataName)) {
-                boardSound = BoardSound.Promote;
-            }
-
-            if (willCastle) {
-                boardSound = BoardSound.Castle;
-            }
-
-            PlaySound(boardSound);
-        }
 
         if (!(gameManager.GetLocalPlayerType() == gameManager.GetCurrentPlayablePlayerType() && isDragging)) {
             while (elapsedTime < duration) {
@@ -469,7 +509,7 @@ public class BoardManager : NetworkBehaviour
     private void ExecuteMoveServerRpc(Vector2Int start, Vector2Int target, bool isCastling, string pieceDataName) {
         Piece piece = piecesOnBoard[start.x, start.y];
 
-        if (piece != null) {
+        if (piece != null) {            
             if (!string.IsNullOrEmpty(pieceDataName)) {
                 piece.UpdatePieceDataRpc(pieceDataName);
             }
@@ -596,19 +636,21 @@ public class BoardManager : NetworkBehaviour
         PlaySound(BoardSound.GameEnd);
     }
 
-    private bool IsKingInCheck(PlayerType player) {
-        Vector2Int kingPos = FindKingPosition(player);
-        return IsSquareUnderAttack(kingPos, player);
+    private bool IsKingInCheck(PlayerType player, Piece[,] board = null) {
+        Piece[,] boardToUse = board ?? piecesOnBoard;
+        Vector2Int kingPos = FindKingPosition(player, boardToUse);
+        return IsSquareUnderAttack(kingPos, player, boardToUse);
     }
 
-    public bool IsSquareUnderAttack(Vector2Int square, PlayerType defender) {
+    public bool IsSquareUnderAttack(Vector2Int square, PlayerType defender, Piece[,] board = null) {
+        Piece[,] boardToUse = board ?? piecesOnBoard;
         PlayerType attacker = defender == PlayerType.White ? PlayerType.Black : PlayerType.White;
 
         for (int x = 0; x < boardLength; x++) {
             for (int y = 0; y < boardLength; y++) {
-                Piece piece = piecesOnBoard[x, y];
+                Piece piece = boardToUse[x, y];
                 if (piece != null && piece.GetPlayerType() == attacker) {
-                    List<Vector2Int> moves = piece.GetPiecePossibleMoves(piecesOnBoard);
+                    List<Vector2Int> moves = piece.GetPiecePossibleMoves(boardToUse);
                     if (moves.Contains(square)) {
                         return true;
                     }
@@ -626,7 +668,7 @@ public class BoardManager : NetworkBehaviour
                     List<Vector2Int> rawMoves = piece.GetPiecePossibleMoves(piecesOnBoard);
                     List<Vector2Int> validMoves = new List<Vector2Int>(rawMoves);
 
-                    Vector2Int kingPos = FindKingPosition(player);
+                    Vector2Int kingPos = FindKingPosition(player, piecesOnBoard);
                     SimulateMoves(kingPos, new Vector2Int(x, y), validMoves);
 
                     if (validMoves.Count > 0) return true;
@@ -636,10 +678,10 @@ public class BoardManager : NetworkBehaviour
         return false;
     }
 
-    private Vector2Int FindKingPosition(PlayerType player) {
+    private Vector2Int FindKingPosition(PlayerType player, Piece[,] board) {
         for (int x = 0; x < boardLength; x++) {
             for (int y = 0; y < boardLength; y++) {
-                Piece piece = piecesOnBoard[x, y];
+                Piece piece = board[x, y];
                 if (piece != null &&
                     piece.GetPieceType() == PieceType.King &&
                     piece.GetPlayerType() == player) {
@@ -764,8 +806,10 @@ public class BoardManager : NetworkBehaviour
     }
 
     private void PlaySound(BoardSound boardSound) {
-        AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{boardSound}");
-        SoundManager.Instance.PlaySound(audioClip);
+        if (boardSound != BoardSound.None) {
+            AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{boardSound}");
+            SoundManager.Instance.PlaySound(audioClip);
+        }
     }
 
     public Piece GetPieceAtPosition(Vector2Int boardPosition) {

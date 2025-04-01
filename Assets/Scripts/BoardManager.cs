@@ -217,7 +217,7 @@ public class BoardManager : NetworkBehaviour
                     startDragPosition = gridPos;
                     originalPosition = currentDraggingPiece.transform.position;
                     ShowPossibleMoves(clickedPiece, gridPos);
-                    currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 21;
+                    currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 22;
                     return;
                 }
             } 
@@ -253,7 +253,7 @@ public class BoardManager : NetworkBehaviour
         isDragging = false;
 
         if (gameManager.GetCurrentPlayablePlayerType() == gameManager.GetLocalPlayerType()) {
-            currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 20;
+            currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 21;
 
             Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2Int targetGridPos = GetGridPosition(mouseWorldPos);
@@ -494,6 +494,7 @@ public class BoardManager : NetworkBehaviour
     IEnumerator MoveToPosition(Vector2Int startPosition, Vector2Int targetPosition, bool isCastling, string pieceDataName, bool isDragging) {
         HighLightMovedPiece(startPosition, targetPosition);
         Piece piece = piecesOnBoard[startPosition.x, startPosition.y];
+        piece.GetComponent<SpriteRenderer>().sortingOrder = 22;
         piece.MoveTo(targetPosition);
         Vector2 start = gridPositions[startPosition.x, startPosition.y];
         Vector2 target = gridPositions[targetPosition.x, targetPosition.y];
@@ -724,6 +725,7 @@ public class BoardManager : NetworkBehaviour
         Piece piece = piecesOnBoard[start.x, start.y];
 
         if (piece != null) {
+            piece.GetComponent<SpriteRenderer>().sortingOrder = 21;
             if (piece.GetPieceType() == PieceType.Pawn && Mathf.Abs(target.y - start.y) == 2) {
                 int yPosition = piece.GetPlayerType() == PlayerType.White ? target.y - 1 : target.y + 1;
                 lastPawnDoubleStepCapturePosition = new Vector2Int(target.x, yPosition);

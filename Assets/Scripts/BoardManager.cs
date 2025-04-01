@@ -370,11 +370,11 @@ public class BoardManager : NetworkBehaviour
             StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false));
         }
         StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
-        BoardSound boardSound = GetBoardSound(start, target, !string.IsNullOrEmpty(pieceDataName));
+        BoardSound boardSound = GetBoardSound(start, target, pieceDataName);
         PlaySound(boardSound);
     }
 
-    private BoardSound GetBoardSound(Vector2Int start, Vector2Int target, bool isPromoting) {
+    private BoardSound GetBoardSound(Vector2Int start, Vector2Int target, string pieceDataName) {
         Piece piece = piecesOnBoard[start.x, start.y];
 
         if (piece == null) return BoardSound.None;
@@ -391,7 +391,7 @@ public class BoardManager : NetworkBehaviour
             int rookStartX = target.x > 4 ? 7 : 0;
             int rookTargetX = target.x > 4 ? 5 : 3;
 
-            if (WouldCauseCheck(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), piece.GetPlayerType())) {
+            if (WouldCauseCheck(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), piece.GetPlayerType(), pieceDataName)) {
                 boardSound = BoardSound.MoveCheck;
             }
 
@@ -408,11 +408,11 @@ public class BoardManager : NetworkBehaviour
             boardSound = BoardSound.Capture;
         }
 
-        if (isPromoting) {
+        if (!string.IsNullOrEmpty(pieceDataName)) {
             boardSound = BoardSound.Promote;
         }
 
-        if (WouldCauseCheck(start, target, piece.GetPlayerType())) {
+        if (WouldCauseCheck(start, target, piece.GetPlayerType(), pieceDataName)) {
             boardSound = BoardSound.MoveCheck;
         }
 
@@ -429,12 +429,16 @@ public class BoardManager : NetworkBehaviour
         return clone;
     }
 
-    private bool WouldCauseCheck(Vector2Int start, Vector2Int target, PlayerType movingPlayer) {
+    private bool WouldCauseCheck(Vector2Int start, Vector2Int target, PlayerType movingPlayer, string pieceDataName) {
         Piece[,] simulatedBoard = CloneBoard(piecesOnBoard);
-
+        
         Piece piece = simulatedBoard[start.x, start.y];
         simulatedBoard[target.x, target.y] = piece;
         simulatedBoard[start.x, start.y] = null;
+
+        if (!string.IsNullOrEmpty(pieceDataName)) {
+            simulatedBoard[target.x, target.y].UpdatePieceDataLocal(pieceDataName);
+        }
 
         PlayerType opponent = movingPlayer == PlayerType.White ? PlayerType.Black : PlayerType.White;
         return IsKingInCheck(opponent, simulatedBoard);

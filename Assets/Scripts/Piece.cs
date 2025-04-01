@@ -268,4 +268,11 @@ public class Piece : NetworkBehaviour
         GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>($"Themes/{playerTheme}/Pieces/{pieceData.playerType}{pieceData.pieceType}");
         SetPossibleMoves();
     }
+
+    public void UpdatePieceDataLocal(string pieceDataName) {
+        pieceData = Resources.Load<PieceData>($"PieceData/{pieceDataName}");
+        PlayerTheme playerTheme = ProfileManager.Instance.GetPlayerTheme();
+        GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>($"Themes/{playerTheme}/Pieces/{pieceData.playerType}{pieceData.pieceType}");
+        SetPossibleMoves();
+    }
 }

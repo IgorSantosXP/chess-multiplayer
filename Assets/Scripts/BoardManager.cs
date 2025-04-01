@@ -16,6 +16,7 @@ public class BoardManager : NetworkBehaviour
     [SerializeField] private GameObject captureHintOverlayPrefab;
     [SerializeField] private GameObject piecePrefab;
     [SerializeField] private GameObject promotionWindowPrefab;
+    [SerializeField] private GameObject illegalMoveOverlayPrefab;
     [SerializeField] private PieceData[] whitePieces;
     [SerializeField] private PieceData[] blackPieces;
 
@@ -269,6 +270,7 @@ public class BoardManager : NetworkBehaviour
 
             if (startDragPosition != targetGridPos && IsKingInCheck(gameManager.GetLocalPlayerType())) {
                 PlaySound(BoardSound.Illegal);
+                StartCoroutine(IllegalMoveBlink());
             }
         }
 
@@ -276,6 +278,24 @@ public class BoardManager : NetworkBehaviour
             currentDraggingPiece.transform.position = originalPosition;
             currentDraggingPiece = null;
         }
+    }
+
+    private IEnumerator IllegalMoveBlink() {
+        int blinkTime = 3;
+        Vector2Int kingPosition = FindKingPosition(gameManager.GetLocalPlayerType(), piecesOnBoard);
+        GameObject overlay = Instantiate(illegalMoveOverlayPrefab, gridPositions[kingPosition.x, kingPosition.y], Quaternion.identity);
+        overlay.transform.localScale = new Vector2(overlaySize, overlaySize);
+        overlay.SetActive(false);
+
+        while (blinkTime > 0) {
+            overlay.SetActive(true);
+            blinkTime -= 1;
+            yield return new WaitForSeconds(0.25f);
+            overlay.SetActive(false);
+            yield return new WaitForSeconds(0.25f);
+        }
+
+        Destroy(overlay);
     }
 
     private bool IsPromotingAPiece(int x, int y) {

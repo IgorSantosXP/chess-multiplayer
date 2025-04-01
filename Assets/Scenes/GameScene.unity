@@ -1741,6 +1741,7 @@ MonoBehaviour:
   captureHintOverlayPrefab: {fileID: 1401075334358952900, guid: b2d88be1a732376488a37fc917bd40be, type: 3}
   piecePrefab: {fileID: 1399495526532086067, guid: 0abb226f94061a041870e869e666e7bd, type: 3}
   promotionWindowPrefab: {fileID: 1181368708373220430, guid: 605070d9671f07542ba96eb4f5129076, type: 3}
+  illegalMoveOverlayPrefab: {fileID: 5723431944030198618, guid: 85570b7f358a05f4abde713a329c7df4, type: 3}
   whitePieces:
   - {fileID: 11400000, guid: a970e0f5fc574774b90262d876765c25, type: 2}
   - {fileID: 11400000, guid: 839bc29bbdefa2d4ebd40e78db8af4b2, type: 2}

@@ -249,33 +249,33 @@ public class BoardManager : NetworkBehaviour
 
     private void EndDrag() {
         if (!isDragging) return;
+        isDragging = false;
+
         if (gameManager.GetCurrentPlayablePlayerType() == gameManager.GetLocalPlayerType()) {
             currentDraggingPiece.GetComponent<SpriteRenderer>().sortingOrder = 20;
 
             Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2Int targetGridPos = GetGridPosition(mouseWorldPos);
-
+            
             if (possibleMoves.Contains(targetGridPos)) {
                 if (currentDraggingPiece.GetPieceType() == PieceType.Pawn &&
                     (targetGridPos.y == 7 || targetGridPos.y == 0)) {
                     ShowPromotionWindow(currentDraggingPiece.GetPieceData().playerType, targetGridPos);
                 } else {
-                    RequestMoveServerRpc(startDragPosition, targetGridPos, isDragging);
+                    RequestMoveServerRpc(startDragPosition, targetGridPos, true);
                 }
-            } else {
-                if (currentDraggingPiece != null) {
-                    currentDraggingPiece.transform.position = originalPosition;
-                    currentDraggingPiece = null;
-                }
+                return;
             }
-        } else {
-            if (currentDraggingPiece != null) {
-                currentDraggingPiece.transform.position = originalPosition;
-                currentDraggingPiece = null;
+
+            if (startDragPosition != targetGridPos && IsKingInCheck(gameManager.GetLocalPlayerType())) {
+                PlaySound(BoardSound.Illegal);
             }
         }
 
-        isDragging = false;
+        if (currentDraggingPiece != null) {
+            currentDraggingPiece.transform.position = originalPosition;
+            currentDraggingPiece = null;
+        }
     }
 
     private bool IsPromotingAPiece(int x, int y) {

@@ -375,10 +375,15 @@ public class BoardManager : NetworkBehaviour
     }
 
     private BoardSound GetBoardSound(Vector2Int start, Vector2Int target, bool isPromoting) {
-        BoardSound boardSound = BoardSound.Move;
         Piece piece = piecesOnBoard[start.x, start.y];
 
         if (piece == null) return BoardSound.None;
+
+        BoardSound boardSound = BoardSound.MoveSelf;
+        if (piece.GetPlayerType() != gameManager.GetLocalPlayerType()) {
+            boardSound = BoardSound.MoveOpponent;
+        }
+
         if (piece.GetPieceType() == PieceType.King && Math.Abs(target.x - start.x) == 2) {
             boardSound = BoardSound.Castle;
 

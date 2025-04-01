@@ -28,7 +28,8 @@ public enum BoardSound {
     GameStart,
     Illegal,
     LastSeconds,
-    Move,
+    MoveSelf,
+    MoveOpponent,
     MoveCheck,
     Promote
 }

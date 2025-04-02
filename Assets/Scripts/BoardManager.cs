@@ -839,7 +839,7 @@ public class BoardManager : NetworkBehaviour
     private void PlaySound(BoardSound boardSound) {
         if (boardSound != BoardSound.None) {
             AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{boardSound}");
-            SoundManager.Instance.PlaySound(audioClip);
+            SoundManager.Instance.PlaySFX(audioClip);
         }
     }
 

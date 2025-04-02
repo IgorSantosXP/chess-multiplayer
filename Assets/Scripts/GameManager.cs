@@ -40,6 +40,7 @@ public class GameManager : NetworkBehaviour
     }
 
     private void Start() {
+        SoundManager.Instance.StopMainMenuMusic();
         SetTimerDefaultPosition();
         playerTheme = ProfileManager.Instance.GetPlayerTheme();
         boardManager = BoardManager.Instance;
@@ -288,7 +289,7 @@ public class GameManager : NetworkBehaviour
 
     private void PlaySound(BoardSound boardSound) {
         AudioClip audioClip = Resources.Load<AudioClip>($"Themes/{playerTheme}/Sounds/{boardSound}");
-        SoundManager.Instance.PlaySound(audioClip);
+        SoundManager.Instance.PlaySFX(audioClip);
     }
 
     public void TriggerOnSurrender() {

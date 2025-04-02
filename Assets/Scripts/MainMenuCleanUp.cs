@@ -16,4 +16,8 @@ public class MainMenuCleanUp : MonoBehaviour
             Destroy(ChessLobby.Instance.gameObject);
         }
     }
+
+    private void Start() {
+        SoundManager.Instance.StartMainMenuMusic();
+    }
 }

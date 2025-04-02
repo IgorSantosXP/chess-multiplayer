@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.UI;
 
@@ -9,6 +10,7 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject optionsMenu;
     [SerializeField] private GameObject playerOptionsMenu;
+    [SerializeField] private GameObject soundOptionsMenu;
     [SerializeField] private GameObject selectThemeMenu;
     [SerializeField] private Button multiplayerButton;
     [SerializeField] private Button optionsButton;
@@ -28,6 +30,10 @@ public class MainMenuUIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI cardThemeText;
     [SerializeField] private SpriteRenderer backgroundGame;
     [SerializeField] private SpriteRenderer boardGame;
+    [SerializeField] private AudioMixer audioMixer;
+    [SerializeField] private Slider masterSlider;
+    [SerializeField] private Slider musicSlider;
+    [SerializeField] private Slider sfxSlider;
 
     private void Awake() {
         Instance = this;
@@ -37,6 +43,7 @@ public class MainMenuUIManager : MonoBehaviour
         SetDefaultValues();
         SetDefaultListeners();
         LoadTheme(ProfileManager.Instance.GetPlayerTheme());
+        LoadDefaultVolumes();
     }
 
     private void SetDefaultListeners() {
@@ -60,15 +67,20 @@ public class MainMenuUIManager : MonoBehaviour
         playerOptionsButton.onClick.AddListener(() => {
             optionsMenu.SetActive(false);
             playerOptionsMenu.SetActive(true);
+            backToOptionsButton.gameObject.SetActive(true);
         });
 
         soundOptionsButton.onClick.AddListener(() => {
-            Debug.Log("soundOptionsButton");
+            optionsMenu.SetActive(false);
+            soundOptionsMenu.SetActive(true);
+            backToOptionsButton.gameObject.SetActive(true);
         });
 
         backToOptionsButton.onClick.AddListener(() => {
             optionsMenu.SetActive(true);
             playerOptionsMenu.SetActive(false);
+            soundOptionsMenu.SetActive(false);
+            backToOptionsButton.gameObject.SetActive(false);
         });
 
         backToMainMenuButton.onClick.AddListener(() => {
@@ -88,6 +100,18 @@ public class MainMenuUIManager : MonoBehaviour
             selectThemeMenu.SetActive(false);
         });
 
+        masterSlider.onValueChanged.AddListener((float value) => {
+            SetMasterVolume(value);
+        });
+
+        musicSlider.onValueChanged.AddListener((float value) => {
+            SetMusicVolume(value);
+        });
+
+        sfxSlider.onValueChanged.AddListener((float value) => {
+            SetSFXVolume(value);
+        });
+
         playerNameInput.text = ProfileManager.Instance.GetPlayerName();
         playerNameInput.onValueChanged.AddListener((string newText) => {
             ProfileManager.Instance.SetPlayerName(newText);
@@ -99,6 +123,8 @@ public class MainMenuUIManager : MonoBehaviour
         optionsMenu.SetActive(false);
         playerOptionsMenu.SetActive(false);
         selectThemeMenu.SetActive(false);
+        soundOptionsMenu.SetActive(false);
+        backToOptionsButton.gameObject.SetActive(false);
     }
 
     private void LoadTheme(PlayerTheme playerTheme) {
@@ -120,6 +146,27 @@ public class MainMenuUIManager : MonoBehaviour
         }
 
         
+    }
+
+    private void LoadDefaultVolumes() {
+        masterSlider.value = SoundManager.Instance.LoadPlayerMasterVolume();
+        musicSlider.value = SoundManager.Instance.LoadPlayerMusicVolume();
+        sfxSlider.value = SoundManager.Instance.LoadPlayerSFXVolume();
+    }
+
+    private void SetMasterVolume(float value) {
+        audioMixer.SetFloat(AudioMixerParams.MasterVolume.ToString(), Mathf.Log10(value)*20);
+        SoundManager.Instance.SetPlayerMasterVolume(value);
+    }
+
+    private void SetMusicVolume(float value) {
+        audioMixer.SetFloat(AudioMixerParams.MusicVolume.ToString(), Mathf.Log10(value) * 20);
+        SoundManager.Instance.SetPlayerMusicVolume(value);
+    }
+
+    private void SetSFXVolume(float value) {
+        audioMixer.SetFloat(AudioMixerParams.SFXVolume.ToString(), Mathf.Log10(value) * 20);
+        SoundManager.Instance.SetPlayerSFXVolume(value);
     }
 
     public void SetProfileImage(Sprite newSprite) {

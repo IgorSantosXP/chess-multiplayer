@@ -6,6 +6,7 @@ using Unity.Netcode;
 using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameManager : NetworkBehaviour
 {
@@ -16,6 +17,8 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private RectTransform blackTimer;
     [SerializeField] private TextMeshProUGUI whiteTimerText;
     [SerializeField] private TextMeshProUGUI blackTimerText;
+    [SerializeField] private RectTransform whiteClockTransform;
+    [SerializeField] private RectTransform blackClockTransform;
 
     private PlayerType localPlayerType;
     private NetworkVariable<PlayerType> currentPlayablePlayerType = new NetworkVariable<PlayerType>();
@@ -119,7 +122,7 @@ public class GameManager : NetworkBehaviour
                     OnTimeOutRpc(PlayerType.White, PlayerType.Black);
                     yield break;
                 }
-                if (whiteTimeRemaining.Value <= 20 && !isBlackLastSeconds) {
+                if (blackTimeRemaining.Value <= 20 && !isBlackLastSeconds) {
                     isBlackLastSeconds = true;
                     TriggerOnLastSecondsRpc(PlayerType.Black);
                 }
@@ -128,6 +131,58 @@ public class GameManager : NetworkBehaviour
             }
 
             yield return new WaitForSeconds(1);
+        }
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerClockAnimationRpc() {
+        StartCoroutine(ClockAnimation());
+    }
+
+    private IEnumerator ClockAnimation() {
+        yield return new WaitForSeconds(1);
+
+        float rotationDuration = 0.10f;
+        float totalCycleTime = 1f;
+
+        while (isGameRunning) {
+            float cycleStartTime = Time.time;
+
+            Transform currentClock;
+            float targetDegrees = 90f;
+
+            if (currentPlayablePlayerType.Value == PlayerType.White) {
+                if (whiteTimeRemaining.Value <= 0) yield break;
+                currentClock = whiteClockTransform;
+                if (whiteTimeRemaining.Value <= 20) targetDegrees = 360f;
+            } else {
+                if (blackTimeRemaining.Value <= 0) yield break;
+                currentClock = blackClockTransform;
+                if (blackTimeRemaining.Value <= 20) targetDegrees = 360f;
+            }
+
+            float startRotation = currentClock.eulerAngles.z;
+            float endRotation = startRotation - targetDegrees;
+
+            float elapsed = 0f;
+            while (elapsed < rotationDuration) {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / rotationDuration);
+                currentClock.rotation = Quaternion.Euler(0, 0,
+                    Mathf.LerpAngle(startRotation, endRotation, t));
+                yield return null;
+            }
+
+            currentClock.rotation = Quaternion.Euler(0, 0, endRotation);
+
+            float elapsedCycleTime = Time.time - cycleStartTime;
+            float remainingWaitTime = totalCycleTime - elapsedCycleTime;
+
+            if (remainingWaitTime > 0) {
+                yield return new WaitForSeconds(remainingWaitTime);
+            } else {
+                yield return null;
+            }
         }
     }
 
@@ -208,6 +263,7 @@ public class GameManager : NetworkBehaviour
         SetTimerPositionRpc();
         AdjustCameraRotationRpc();
         StartCoroutine(RunTimer());
+        TriggerClockAnimationRpc();
     }
 
     private void SetTimer() {

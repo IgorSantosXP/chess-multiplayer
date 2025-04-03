@@ -39,6 +39,7 @@ public class BoardManager : NetworkBehaviour
     private int boardLength = 8;
     private bool isPromotionWindowOpen;
     private bool isGameRunning;
+    private bool isOptionWindowOpen;
 
     private bool isDragging = false;
     private Piece currentDraggingPiece;
@@ -70,7 +71,7 @@ public class BoardManager : NetworkBehaviour
     }
 
     void Update() {
-        if (!isGameRunning) return;
+        if (!isGameRunning || isOptionWindowOpen) return;
         if (Input.GetMouseButtonDown(0)) {
             DetectSquareClick();
         }
@@ -858,5 +859,9 @@ public class BoardManager : NetworkBehaviour
 
     public Piece GetLastPawnDoubleStepPiece() {
         return piecesOnBoard[lastPawnDoubleStepPosition.x, lastPawnDoubleStepPosition.y];
+    }
+
+    public void SetOptionsWindow(bool isOpen) {
+        isOptionWindowOpen = isOpen;
     }
 }

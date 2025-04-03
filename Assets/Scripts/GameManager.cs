@@ -25,6 +25,7 @@ public class GameManager : NetworkBehaviour
 
     private bool isGameRunning;
     private bool wantsRematch;
+    private bool isOptionWindowOpen;
     private BoardManager boardManager;
     private HashSet<ulong> playersWantingRematch = new HashSet<ulong>();
 
@@ -51,6 +52,21 @@ public class GameManager : NetworkBehaviour
         blackTimeRemaining.OnValueChanged += (oldValue, newValue) => UpdateTimerUI();
 
         UpdateTimerUI();
+    }
+
+    private void Update() {
+        if (!isGameRunning) return;
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            if (isOptionWindowOpen) {
+                isOptionWindowOpen = false;
+                GameUIManager.Instance.SetOptionsWindow(isOptionWindowOpen);
+                BoardManager.Instance.SetOptionsWindow(isOptionWindowOpen);
+                return;
+            }
+            isOptionWindowOpen = true;
+            GameUIManager.Instance.SetOptionsWindow(isOptionWindowOpen);
+            BoardManager.Instance.SetOptionsWindow(isOptionWindowOpen);
+        }
     }
 
     private void SetTimerDefaultPosition() {

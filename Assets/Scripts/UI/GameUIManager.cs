@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -17,6 +18,8 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private GameObject currentCapturedPieces;
     [SerializeField] private GameObject opponentCapturedPieces;
     [SerializeField] private GameObject playersProfileContainer;
+    [SerializeField] private GameObject optionsWindow;
+    [SerializeField] private GameObject soundOptionsWindow;
     [SerializeField] private TextMeshProUGUI endGameTitle;
     [SerializeField] private TextMeshProUGUI endGameText;
     [SerializeField] private TextMeshProUGUI waitingText;
@@ -29,11 +32,17 @@ public class GameUIManager : NetworkBehaviour
     [SerializeField] private Button quitButton;
     [SerializeField] private Button acceptRematchButton;
     [SerializeField] private Button rejectRematchButton;
-    [SerializeField] private Button surrenderButton;
     [SerializeField] private Button acceptSurrenderButton;
     [SerializeField] private Button declineSurrenderButton;
+    [SerializeField] private Button soundOptionButton;
+    [SerializeField] private Button surrenderOptionButton;
+    [SerializeField] private Button backButton;
+    [SerializeField] private Button optionsButton;
     [SerializeField] private SpriteRenderer backgroundGame;
     [SerializeField] private SpriteRenderer boardGame;
+    [SerializeField] private AudioMixer audioMixer;
+    [SerializeField] private Slider masterSlider;
+    [SerializeField] private Slider sfxSlider;
 
     private GameManager gameManager;
     private BoardManager boardManager;
@@ -58,6 +67,7 @@ public class GameUIManager : NetworkBehaviour
         gameManager.OnGameStarted += GameManager_OnGameStarted;
         gameManager.OnEndGame += GameManager_OnEndGame;
         SetPlayerImage();
+        LoadDefaultVolumes();
     }
 
     private void BoardManager_OnPieceCaptured(PlayerType playerType, PieceType pieceType) {
@@ -111,11 +121,13 @@ public class GameUIManager : NetworkBehaviour
     private void GameManager_OnGameStarted(object sender, System.EventArgs e) {
         SetCapturedPieces();
         ResetEndGameWindow();
-        endGameWindow.gameObject.SetActive(false);
+        endGameWindow.SetActive(false);
         timersUI.SetActive(true);
         playersProfileContainer.SetActive(true);
         loadingUI.SetActive(false);
-        surrenderButton.gameObject.SetActive(true);
+        optionsWindow.SetActive(false);
+        soundOptionsWindow.SetActive(false);
+        optionsButton.gameObject.SetActive(true);
     }
 
     private void BoardManager_OnEndGame(string title, string text) {
@@ -139,10 +151,6 @@ public class GameUIManager : NetworkBehaviour
             RejectRematch();
         });
 
-        surrenderButton.onClick.AddListener(() => {
-            OpenSurrenderWindow();
-        });
-
         acceptSurrenderButton.onClick.AddListener(() => {
             AcceptSurrender();
         });
@@ -150,6 +158,31 @@ public class GameUIManager : NetworkBehaviour
         declineSurrenderButton.onClick.AddListener(() => {
             CloseSurrenderWindow();
         });
+
+        soundOptionButton.onClick.AddListener(() => {
+            OpenSoundOptions();
+        });
+
+        surrenderOptionButton.onClick.AddListener(() => {
+            OpenSurrenderWindow();
+        });
+
+        backButton.onClick.AddListener(() => {
+            BackToOptions();
+        });
+
+        optionsButton.onClick.AddListener(() => {
+            SetOptionsWindow(optionsWindow.activeSelf ? false : true);
+        });
+
+        masterSlider.onValueChanged.AddListener((float value) => {
+            SetMasterVolume(value);
+        });
+
+        sfxSlider.onValueChanged.AddListener((float value) => {
+            SetSFXVolume(value);
+        });
+
     }
 
     private void SetPlayerName() {
@@ -195,11 +228,13 @@ public class GameUIManager : NetworkBehaviour
     }
 
     private void SetDefaultValues() {
-        endGameWindow.gameObject.SetActive(false);
+        endGameWindow.SetActive(false);
         timersUI.SetActive(false);
         playersProfileContainer.SetActive(false);
         loadingUI.SetActive(true);
-        surrenderButton.gameObject.SetActive(false);
+        optionsWindow.SetActive(false);
+        soundOptionsWindow.SetActive(false);
+        optionsButton.gameObject.SetActive(false);
     }
 
     private void ResetEndGameWindow() {
@@ -209,6 +244,9 @@ public class GameUIManager : NetworkBehaviour
         opponentLeftText.gameObject.SetActive(false);
         rematchRequestWindow.SetActive(false);
         surrenderWindow.SetActive(false);
+        optionsWindow.SetActive(false);
+        soundOptionsWindow.SetActive(false);
+        optionsButton.gameObject.SetActive(false);
     }
 
     private void RequestRematch() {
@@ -239,6 +277,7 @@ public class GameUIManager : NetworkBehaviour
 
     private void OpenSurrenderWindow() {
         surrenderWindow.SetActive(true);
+        optionsWindow.SetActive(false);
     }
 
     private void CloseSurrenderWindow() {
@@ -257,6 +296,37 @@ public class GameUIManager : NetworkBehaviour
             backgroundGame.sprite = backgroundSprite;
             boardGame.sprite = boardSprite;
         }
+    }
+
+    private void LoadDefaultVolumes() {
+        masterSlider.value = SoundManager.Instance.LoadPlayerMasterVolume();
+        sfxSlider.value = SoundManager.Instance.LoadPlayerSFXVolume();
+    }
+
+    private void SetMasterVolume(float value) {
+        audioMixer.SetFloat(AudioMixerParams.MasterVolume.ToString(), Mathf.Log10(value) * 20);
+        SoundManager.Instance.SetPlayerMasterVolume(value);
+    }
+
+    private void SetSFXVolume(float value) {
+        audioMixer.SetFloat(AudioMixerParams.SFXVolume.ToString(), Mathf.Log10(value) * 20);
+        SoundManager.Instance.SetPlayerSFXVolume(value);
+    }
+
+    private void OpenSoundOptions() {
+        optionsWindow.SetActive(false);
+        soundOptionsWindow.SetActive(true);
+    }
+
+    private void BackToOptions() {
+        optionsWindow.SetActive(true);
+        soundOptionsWindow.SetActive(false);
+    }
+
+    public void SetOptionsWindow(bool isOpen) {
+        optionsWindow.SetActive(isOpen);
+        soundOptionsWindow.SetActive(false);
+        surrenderWindow.SetActive(false);
     }
 
     public void OpenEndGameWindow(string title, string text) {

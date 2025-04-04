@@ -324,6 +324,12 @@ MonoBehaviour:
   blackTimerText: {fileID: 1325710449}
   whiteClockTransform: {fileID: 1991011572}
   blackClockTransform: {fileID: 1000243755}
+  whiteTimerBackground: {fileID: 1542979689}
+  blackTimerBackground: {fileID: 507784578}
+  whiteTimerFont: {fileID: 11400000, guid: ddbb040e602132e46ad47e7e1e445ede, type: 2}
+  blackTimerFont: {fileID: 11400000, guid: 48f4f0cc59e8ec841aa5161e4f80a5b3, type: 2}
+  whiteTimerClockSprite: {fileID: 5266063747247413060, guid: f5cdbf8598b6fd34881f102916ae72cf, type: 3}
+  blackTimerClockSprite: {fileID: 5439719031452857698, guid: 1b325ece049b3674887f16f18c49355e, type: 3}
 --- !u!1 &169410797
 GameObject:
   m_ObjectHideFlags: 0
@@ -840,7 +846,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -89.820045, y: 13.097992}
+  m_AnchoredPosition: {x: -89, y: 13}
   m_SizeDelta: {x: 216.932, y: 26}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &266233010

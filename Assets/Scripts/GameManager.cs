@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEditor.PackageManager;
+using UnityEditor.U2D.Aseprite;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -29,14 +30,14 @@ public class GameManager : NetworkBehaviour
     private PlayerType localPlayerType;
     private NetworkVariable<PlayerType> currentPlayablePlayerType = new NetworkVariable<PlayerType>();
     private static NetworkVariable<PlayerType> assignedType = new NetworkVariable<PlayerType>(PlayerType.None);
-    //private NetworkVariable<float> whiteTimeRemaining = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    //private NetworkVariable<float> blackTimeRemaining = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> whiteTimeRemaining = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> blackTimeRemaining = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private bool isGameRunning;
     private bool wantsRematch;
     private bool isOptionWindowOpen;
-    private float whiteTimeRemaining;
-    private float blackTimeRemaining;
+    //private float whiteTimeRemaining;
+    //private float blackTimeRemaining;
     private Color whiteTimerBackgroundColor = new Color(1f, 1f, 1f);
     private Color blackTimerBackgroundColor = new Color(0f, 0f, 0f);
     private Color lastSecondsTimerBackgroundColor = new Color(0.7075472f, 0f, 0f);
@@ -62,9 +63,9 @@ public class GameManager : NetworkBehaviour
         boardManager.OnPieceMove += BoardManager_OnPieceMove;
         boardManager.OnEndGame += BoardManager_OnEndGame;
 
-        //whiteTimeRemaining.OnValueChanged += (oldValue, newValue) => UpdateTimerUI();
-        //blackTimeRemaining.OnValueChanged += (oldValue, newValue) => UpdateTimerUI();
-        currentPlayablePlayerType.OnValueChanged += (oldValue, newValue) => UpdateTimerBackgroundUI(newValue);
+        whiteTimeRemaining.OnValueChanged += (oldValue, newValue) => HandleTimeChanged();
+        blackTimeRemaining.OnValueChanged += (oldValue, newValue) => HandleTimeChanged();
+        //currentPlayablePlayerType.OnValueChanged += (oldValue, newValue) => UpdateTimerBackgroundUI(newValue);
 
         UpdateTimerUI();
     }
@@ -109,15 +110,26 @@ public class GameManager : NetworkBehaviour
         SetTimerClockVisibility(playerType);
     }
 
+    private void HandleTimeChanged() {
+        UpdateTimerUI();
+        SetTimerUIValues(currentPlayablePlayerType.Value);
+        SetTimerClockVisibility(currentPlayablePlayerType.Value);
+    }
+
     private void UpdateTimerUI() {
-        whiteTimerText.text = FormatTime(whiteTimeRemaining);
-        blackTimerText.text = FormatTime(blackTimeRemaining);
+        whiteTimerText.text = FormatTime(whiteTimeRemaining.Value);
+        blackTimerText.text = FormatTime(blackTimeRemaining.Value);
     }
 
     private string FormatTime(float time) {
         int minutes = Mathf.FloorToInt(time / 60);
-        int seconds = Mathf.FloorToInt(time % 60);
-        return string.Format("{0:00}:{1:00}", minutes, seconds);
+        float seconds = time % 60;
+
+        if (time < 20) {
+            return string.Format("{0:0}:{1:00.0}", minutes, seconds);
+        } else {
+            return string.Format("{0:0}:{1:00}", minutes, Mathf.FloorToInt(seconds));
+        }
     }
 
     private void BoardManager_OnPieceMove(object sender, EventArgs e) {
@@ -136,46 +148,53 @@ public class GameManager : NetworkBehaviour
         bool isWhiteLastSeconds = false;
         bool isBlackLastSeconds = false;
         float rotationAmount = -90;
-        float rotationTime = 0.10f;
 
         SetTimer();
         yield return new WaitForSeconds(1);
         while (isGameRunning) {
             if (currentPlayablePlayerType.Value == PlayerType.White) {
-                if (whiteTimeRemaining <= 0 && IsServer) {
+                if (whiteTimeRemaining.Value <= 0 && IsServer) {
                     OnTimeOutRpc(PlayerType.Black, PlayerType.White);
                     yield break;
                 }
-                if (whiteTimeRemaining <= 20 && !isWhiteLastSeconds) {
-                    SetTimerUIValues(PlayerType.White);
+                if (whiteTimeRemaining.Value < 20 && !isWhiteLastSeconds) {
+                    //SetTimerUIValues(PlayerType.White);
                     isWhiteLastSeconds = true;
-                    if (localPlayerType == PlayerType.White) {
-                        PlaySound(BoardSound.LastSeconds);
-                    }
+                    TriggerSoundRpc(PlayerType.White);
                 }
-                whiteTimeRemaining -= 1;
+
+                float decrement = whiteTimeRemaining.Value <= 20 ? 0.1f : 1f;
+                whiteTimeRemaining.Value = Mathf.Max(whiteTimeRemaining.Value - decrement, 0);
+
                 UpdateTimerUI();
-                yield return StartCoroutine(RotateTimerClockSmoothly(whiteClockTransform, rotationAmount, rotationTime));
+                RotateClockRpc(PlayerType.White, rotationAmount);
+                yield return new WaitForSeconds(decrement);
             }
             if (currentPlayablePlayerType.Value == PlayerType.Black) {
-
-                if (blackTimeRemaining <= 0 && IsServer) {
+                if (blackTimeRemaining.Value <= 0 && IsServer) {
                     OnTimeOutRpc(PlayerType.White, PlayerType.Black);
                     yield break;
                 }
-                if (blackTimeRemaining <= 20 && !isBlackLastSeconds) {
-                    SetTimerUIValues(PlayerType.Black);
+                if (blackTimeRemaining.Value < 20 && !isBlackLastSeconds) {
+                    //SetTimerUIValues(PlayerType.Black);
                     isBlackLastSeconds = true;
-                    if (localPlayerType == PlayerType.Black) {
-                        PlaySound(BoardSound.LastSeconds);
-                    }
+                    TriggerSoundRpc(PlayerType.Black);
                 }
-                blackTimeRemaining -= 1;
-                UpdateTimerUI();
-                yield return StartCoroutine(RotateTimerClockSmoothly(blackClockTransform, rotationAmount, rotationTime));
-            }
 
-            yield return new WaitForSeconds(1);
+                float decrement = blackTimeRemaining.Value <= 20 ? 0.1f : 1f;
+                blackTimeRemaining.Value = Mathf.Max(blackTimeRemaining.Value - decrement, 0);
+
+                UpdateTimerUI();
+                RotateClockRpc(PlayerType.Black, rotationAmount);
+                yield return new WaitForSeconds(decrement);
+            }
+        }
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerSoundRpc(PlayerType playerType) {
+        if (localPlayerType == playerType) {
+            PlaySound(BoardSound.LastSeconds);
         }
     }
 
@@ -220,17 +239,13 @@ public class GameManager : NetworkBehaviour
         TMP_FontAsset whiteFontAsset = whiteTimerFont;
         Sprite whiteSprite = whiteTimerClockSprite;
 
-        if (playerType == PlayerType.White) {
-            if (whiteTimeRemaining <= 20f) {
-                whiteBackgroundColor = lastSecondsTimerBackgroundColor;
-                whiteFontAsset = blackTimerFont;
-                whiteSprite = blackTimerClockSprite;
-            }
+        if (playerType == PlayerType.White && whiteTimeRemaining.Value < 20f) {
+            whiteBackgroundColor = lastSecondsTimerBackgroundColor;
+            whiteFontAsset = blackTimerFont;
+            whiteSprite = blackTimerClockSprite;
         }
-        if (playerType == PlayerType.Black) {
-            if (blackTimeRemaining <= 20f) {
-                blackBackgroundColor = lastSecondsTimerBackgroundColor;
-            }
+        if (playerType == PlayerType.Black && blackTimeRemaining.Value < 20f) {
+            blackBackgroundColor = lastSecondsTimerBackgroundColor;
         }
 
         whiteTimerBackground.color = whiteBackgroundColor;
@@ -238,6 +253,12 @@ public class GameManager : NetworkBehaviour
         whiteTimerText.font = whiteFontAsset;
         whiteClockTransform.GetComponent<Image>().sprite = whiteSprite;
         SetTimerAlphaColor(playerType);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void RotateClockRpc(PlayerType playerType, float rotationAmount) {
+        RectTransform targetClock = playerType == PlayerType.White ? whiteClockTransform : blackClockTransform;
+        StartCoroutine(RotateTimerClockSmoothly(targetClock, rotationAmount, 0.1f));
     }
 
     private IEnumerator RotateTimerClockSmoothly(Transform target, float angle, float duration) {
@@ -324,15 +345,15 @@ public class GameManager : NetworkBehaviour
         SetTimerPositionRpc();
         AdjustCameraRotationRpc();
         SetTimerDefaultValues();
-        TriggerRunTimerRpc();
+        StartCoroutine(RunTimer());
     }
 
     private void SetTimer() {
         //whiteTimeRemaining = ChessMultiplayer.Instance.GetGameTimer();
         //blackTimeRemaining = ChessMultiplayer.Instance.GetGameTimer();
-
-        whiteTimeRemaining = 30f;
-        blackTimeRemaining = 30f;
+        if (!IsServer) return;
+        whiteTimeRemaining.Value = 30f;
+        blackTimeRemaining.Value = 30f;
     }
 
     [Rpc(SendTo.ClientsAndHost)]

@@ -141,11 +141,15 @@ public class ChessMultiplayer : NetworkBehaviour
 
     private void SendImageToServer(Sprite sprite) {
         if (sprite == null) return;
+        try {
+            Texture2D tex = sprite.texture;
+            byte[] imageBytes = ImageConversion.EncodeToPNG(tex);
 
-        Texture2D tex = sprite.texture;
-        byte[] imageBytes = ImageConversion.EncodeToPNG(tex);
-
-        SendProfileImageServerRpc(imageBytes);
+            SendProfileImageServerRpc(imageBytes);
+        } catch (Exception e) {
+            Debug.Log(e);
+        }
+        
     }
 
     [ServerRpc(RequireOwnership = false)]

@@ -5,6 +5,7 @@ using System.Collections;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.U2D;
 
 
 public enum PlayerTheme {
@@ -159,6 +160,12 @@ public class ProfileManager : MonoBehaviour
             Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), Vector2.one * 0.5f);
             MainMenuUIManager.Instance.SetProfileImage(sprite);
             profileSprite = sprite;
+            return;
         }
+
+        Sprite defaultSprite = Resources.Load<Sprite>($"DefaultImage/Image");
+
+        MainMenuUIManager.Instance.SetProfileImage(defaultSprite);
+        profileSprite = defaultSprite;
     }
 }

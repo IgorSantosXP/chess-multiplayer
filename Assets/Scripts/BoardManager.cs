@@ -103,6 +103,7 @@ public class BoardManager : NetworkBehaviour
         ClearHighLightedCaptureHint();
         DestroyPromotionWindow();
         removeSelectedSquareOverlay();
+        isOptionWindowOpen = false;
         selectedPiecePosition = new Vector2Int();
         pieceStartPosition = new Vector2Int();
         pieceEndPosition = new Vector2Int();

@@ -295,9 +295,7 @@ public class ChessLobby : MonoBehaviour
     public async void LeaveLobby() {
         if (joinedLobby != null) {
             try {
-                if (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsHost) {
-                    NetworkManager.Singleton.Shutdown();
-                }
+                NetworkManager.Singleton.Shutdown();
                 await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
                 joinedLobby = null;
             } catch (LobbyServiceException e) {
@@ -309,6 +307,7 @@ public class ChessLobby : MonoBehaviour
     public async void KickPlayer(string playerId) {
         if (IsLobbyHost()) {
             try {
+                if (string.IsNullOrEmpty(playerId)) return;
                 await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, playerId);
             } catch (LobbyServiceException e) {
                 Debug.Log(e);

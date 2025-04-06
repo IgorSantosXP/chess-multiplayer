@@ -22,6 +22,7 @@ public class LobbyUIManager : MonoBehaviour
     [SerializeField] private Button joinCodeButton;
     [SerializeField] private Button createButton;
     [SerializeField] private Button startButton;
+    [SerializeField] private Button kickPlayerButton;
     [SerializeField] private TMP_InputField lobbyNameInput;
     [SerializeField] private TMP_InputField joinCodeInput;
     [SerializeField] private Toggle lobbyPrivateToggle;
@@ -68,7 +69,8 @@ public class LobbyUIManager : MonoBehaviour
         clientNameText.text = "Waiting...";
 
         if (ChessMultiplayer.Instance.GetPlayerDataNetworkList().Count == 2) {
-            string clientName = ChessMultiplayer.Instance.GetPlayerDataNetworkList()[1].playerName.ToString();
+            PlayerData clientData = ChessMultiplayer.Instance.GetPlayerDataNetworkList()[1];
+            string clientName = clientData.playerName.ToString();
             clientNameText.text = clientName;
         }
     }
@@ -194,6 +196,7 @@ public class LobbyUIManager : MonoBehaviour
         createLobbyMenu.SetActive(false);
         lobbyMenu.SetActive(true);
         serverListMenu.SetActive(false);
+        kickPlayerButton.gameObject.SetActive(false);
 
         if (lobby != null) {
             lobbyNameText.text = lobby.Name;
@@ -201,8 +204,9 @@ public class LobbyUIManager : MonoBehaviour
         }
     }
 
-    public void SetStartButtonActive(bool canActive) {
+    public void SetStartAndKickButtonActive(bool canActive) {
         startButton.gameObject.SetActive(canActive);
+        kickPlayerButton.gameObject.SetActive(canActive);
     }
 
     public bool IsLobbyWindowActive() {
@@ -211,6 +215,13 @@ public class LobbyUIManager : MonoBehaviour
 
     public void RedirectToServerListMenu() {
         BackToServerListMenu();
+    }
+
+    public void SetKickPlayerButtonListener(string playerId, ulong clientId) {
+        kickPlayerButton.onClick.AddListener(() => {
+            ChessLobby.Instance.KickPlayer(playerId);
+            ChessMultiplayer.Instance.KickPlayer(clientId);
+        });
     }
 
     private void OnDestroy() {

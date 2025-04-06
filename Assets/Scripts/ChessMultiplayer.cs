@@ -45,7 +45,7 @@ public class ChessMultiplayer : NetworkBehaviour
     }
 
     public void StartHost() {
-        NetworkManager.Singleton.OnClientConnectedCallback += NetworkManager_OnClientConnectedCallback;
+        NetworkManager.Singleton.OnClientConnectedCallback += NetworkManager_Server_OnClientConnectedCallback;
         NetworkManager.Singleton.OnClientDisconnectCallback += NetworkManager_Server_OnClientDisconnectCallback;
         NetworkManager.Singleton.StartHost();
         
@@ -61,7 +61,7 @@ public class ChessMultiplayer : NetworkBehaviour
         if (isInGameScene) return;
         playerImages.Clear();
         if (clientId == NetworkManager.ServerClientId) {
-            NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_OnClientConnectedCallback;
+            NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_Server_OnClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Server_OnClientDisconnectCallback;
             playerDataNetworkList.Clear();
             return;
@@ -73,27 +73,26 @@ public class ChessMultiplayer : NetworkBehaviour
             }
         }
         if (NetworkManager.Singleton.ConnectedClientsList.Count < MAX_PLAYER_AMOUNT) {
-            LobbyUIManager.Instance.SetStartButtonActive(false);
+            LobbyUIManager.Instance.SetStartAndKickButtonActive(false);
         }
     }
 
-    private void NetworkManager_OnClientConnectedCallback(ulong clientId) {
+    private void NetworkManager_Server_OnClientConnectedCallback(ulong clientId) {
         if (isInGameScene) return;
         if (clientId == NetworkManager.ServerClientId) {
             OnCreateLobbyCompleted?.Invoke(this, EventArgs.Empty);
             playerDataNetworkList.Clear();
         }
 
-        LobbyUIManager.Instance.SetStartButtonActive(false);
+        LobbyUIManager.Instance.SetStartAndKickButtonActive(false);
 
         playerDataNetworkList.Add(new PlayerData {
             clientId = clientId
         });
         SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
-        
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
         if (NetworkManager.Singleton.ConnectedClientsList.Count == MAX_PLAYER_AMOUNT) {
-            LobbyUIManager.Instance.SetStartButtonActive(true);
+            LobbyUIManager.Instance.SetStartAndKickButtonActive(true);
             SendImageToServer(ProfileManager.Instance.GetProfileSprite());
         }
     }
@@ -103,6 +102,9 @@ public class ChessMultiplayer : NetworkBehaviour
         int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
 
         PlayerData playerData = playerDataNetworkList[playerDataIndex];
+        if (serverRpcParams.Receive.SenderClientId != NetworkManager.ServerClientId) {
+            LobbyUIManager.Instance.SetKickPlayerButtonListener(playerId, serverRpcParams.Receive.SenderClientId);
+        }
 
         playerData.playerId = playerId;
 
@@ -111,7 +113,7 @@ public class ChessMultiplayer : NetworkBehaviour
 
     private void NetworkManager_Client_OnClientConnectedCallback(ulong clientId) {
         if (isInGameScene) return;
-        LobbyUIManager.Instance.SetStartButtonActive(false);
+        LobbyUIManager.Instance.SetStartAndKickButtonActive(false);
         SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
         SendImageToServer(ProfileManager.Instance.GetProfileSprite());
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
@@ -187,5 +189,10 @@ public class ChessMultiplayer : NetworkBehaviour
 
     public int GetGameTimer() {
         return gameTimer.Value;
+    }
+
+    public void KickPlayer(ulong clientId) {
+        string disconnectReason = "You have been kicked from the room by the host";
+        NetworkManager.Singleton.DisconnectClient(clientId, disconnectReason);
     }
 }

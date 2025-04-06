@@ -61,7 +61,6 @@ public class LobbyMessageUI : MonoBehaviour
     }
 
     private void ChessMultiplayer_OnFailedToJoinGame(object sender, System.EventArgs e) {
-        Debug.Log("ChessMultiplayer_OnFailedToJoinGame");
         if (!LobbyUIManager.Instance.IsLobbyWindowActive()) return;
         if (NetworkManager.Singleton.DisconnectReason == "") {
             ShowMessage("Failed to connect");

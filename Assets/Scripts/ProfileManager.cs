@@ -1,11 +1,8 @@
 using SFB;
 using System;
-using System.Buffers.Text;
 using System.Collections;
 using System.IO;
-using TMPro;
 using UnityEngine;
-using UnityEngine.U2D;
 
 
 public enum PlayerTheme {

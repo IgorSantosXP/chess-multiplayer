@@ -24,7 +24,6 @@ public class ProfileManager : MonoBehaviour
     private PlayerTheme playerTheme;
     private Sprite profileSprite;
     private string savedImagePath;
-    private string base64Image;
 
     private void Awake() {
         if (Instance != null) {
@@ -57,8 +56,8 @@ public class ProfileManager : MonoBehaviour
         PlayerPrefs.SetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, playerName);
     }
 
-    public string GetBase64Image() {
-        return base64Image;
+    public Sprite GetProfileSprite() {
+        return profileSprite;
     }
 
     public void SetPlayerTheme(PlayerTheme playerTheme) {
@@ -89,16 +88,6 @@ public class ProfileManager : MonoBehaviour
         texture.LoadImage(imageData);
 
         Texture2D resized = ResizeTextureGPU(texture, 128, 128);
-
-        byte[] jpgData = ImageConversion.EncodeToJPG(resized, quality: 75);
-        string base64 = System.Convert.ToBase64String(jpgData);
-
-        if (base64.Length > 4096) {
-            Debug.Log("Base64 excede 4096 bytes! Reduza o tamanho da imagem.");
-            yield break;
-        }
-
-        base64Image = base64;
 
         Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), Vector2.one * 0.5f);
         MainMenuUIManager.Instance.SetProfileImage(sprite);
@@ -137,20 +126,9 @@ public class ProfileManager : MonoBehaviour
 
             Texture2D resized = ResizeTextureGPU(texture, 128, 128);
 
-            byte[] jpgData = ImageConversion.EncodeToJPG(resized, quality: 75);
-            string base64 = System.Convert.ToBase64String(jpgData);
-
-            if (base64.Length > 4096) {
-                Debug.Log("Base64 excede 4096 bytes! Reduza o tamanho da imagem.");
-                return;
-            }
-
-            base64Image = base64;
-
-            Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), new Vector2(0.5f, 0.5f));
-            profileSprite = sprite;
-
+            Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), Vector2.one * 0.5f);
             MainMenuUIManager.Instance.SetProfileImage(sprite);
+            profileSprite = sprite;
         }
     }
 }

@@ -198,13 +198,15 @@ public class GameUIManager : NetworkBehaviour
     }
 
     private void SetPlayerImage() {
-        foreach (PlayerData playerData in ChessMultiplayer.Instance.GetPlayerDataNetworkList()) {
-            if (playerData.clientId == NetworkManager.Singleton.LocalClientId) {
-                currentPlayerImage.sprite = gameManager.FormatPlayerImageBase64(playerData.playerImageBase64.ToString());
+        foreach (KeyValuePair<ulong, Sprite> playerImage in ChessMultiplayer.Instance.GetPlayerImages()) {
+            if (playerImage.Key == NetworkManager.Singleton.LocalClientId) {
+                currentPlayerImage.sprite = playerImage.Value;
+                currentPlayerImage.preserveAspect = true;
             }
 
-            if (playerData.clientId != NetworkManager.Singleton.LocalClientId) {
-                opponentPlayerImage.sprite = gameManager.FormatPlayerImageBase64(playerData.playerImageBase64.ToString());
+            if (playerImage.Key != NetworkManager.Singleton.LocalClientId) {
+                opponentPlayerImage.sprite = playerImage.Value;
+                currentPlayerImage.preserveAspect = true;
             }
         }
     }

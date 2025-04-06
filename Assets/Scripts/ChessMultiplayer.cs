@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
@@ -14,6 +14,8 @@ public class ChessMultiplayer : NetworkBehaviour
     private NetworkList<PlayerData> playerDataNetworkList;
     private bool isInGameScene;
     private NetworkVariable<int> gameTimer = new NetworkVariable<int>(180, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    private Dictionary<ulong, Sprite> playerImages = new Dictionary<ulong, Sprite>();
 
     public event EventHandler OnPlayerDataNetworkListChanged;
     public event EventHandler OnFailedToJoinGame;
@@ -55,6 +57,7 @@ public class ChessMultiplayer : NetworkBehaviour
 
     private void NetworkManager_Server_OnClientDisconnectCallback(ulong clientId) {
         if (isInGameScene) return;
+        playerImages.Clear();
         if (clientId == NetworkManager.ServerClientId) {
             NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_OnClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Server_OnClientDisconnectCallback;
@@ -84,10 +87,11 @@ public class ChessMultiplayer : NetworkBehaviour
             clientId = clientId
         });
         SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
-        SetPlayerImageBase64ServerRpc(ProfileManager.Instance.GetBase64Image());
+        
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
         if (NetworkManager.Singleton.ConnectedClientsList.Count == MAX_PLAYER_AMOUNT) {
             LobbyUIManager.Instance.SetStartButtonActive(true);
+            SendImageToServer(ProfileManager.Instance.GetProfileSprite());
         }
     }
 
@@ -106,12 +110,13 @@ public class ChessMultiplayer : NetworkBehaviour
         if (isInGameScene) return;
         LobbyUIManager.Instance.SetStartButtonActive(false);
         SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
-        SetPlayerImageBase64ServerRpc(ProfileManager.Instance.GetBase64Image());
+        SendImageToServer(ProfileManager.Instance.GetProfileSprite());
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
     }
 
     private void NetworkManager_Client_OnClientDisconnectCallback(ulong clientId) {
         if (isInGameScene) return;
+        playerImages.Clear();
         OnFailedToJoinGame?.Invoke(this, EventArgs.Empty);
         NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Client_OnClientDisconnectCallback;
         NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_Client_OnClientConnectedCallback;
@@ -129,15 +134,29 @@ public class ChessMultiplayer : NetworkBehaviour
         playerDataNetworkList[playerDataIndex] = playerData;
     }
 
+    private void SendImageToServer(Sprite sprite) {
+        if (sprite == null) return;
+
+        Texture2D tex = sprite.texture;
+        byte[] imageBytes = ImageConversion.EncodeToPNG(tex);
+
+        SendProfileImageServerRpc(imageBytes);
+    }
+
     [ServerRpc(RequireOwnership = false)]
-    private void SetPlayerImageBase64ServerRpc(string base64Image, ServerRpcParams serverRpcParams = default) {
-        int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
+    private void SendProfileImageServerRpc(byte[] imageBytes, ServerRpcParams rpcParams = default) {
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
 
-        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+        SendProfileImageRpc(senderClientId, imageBytes);
+    }
 
-        playerData.playerImageBase64 = base64Image;
+    [Rpc(SendTo.ClientsAndHost)]
+    private void SendProfileImageRpc(ulong clientId, byte[] imageBytes) {
+        Texture2D tex = new Texture2D(2, 2);
+        tex.LoadImage(imageBytes);
 
-        playerDataNetworkList[playerDataIndex] = playerData;
+        Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        playerImages[clientId] = sprite;
     }
 
     public int GetPlayerDataIndexFromClientId(ulong clientId) {
@@ -147,6 +166,10 @@ public class ChessMultiplayer : NetworkBehaviour
             }
         }
         return -1;
+    }
+
+    public Dictionary<ulong, Sprite> GetPlayerImages() {
+        return playerImages;
     }
 
     public NetworkList<PlayerData> GetPlayerDataNetworkList() {

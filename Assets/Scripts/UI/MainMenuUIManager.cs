@@ -171,6 +171,7 @@ public class MainMenuUIManager : MonoBehaviour
 
     public void SetProfileImage(Sprite newSprite) {
         profileImage.sprite = newSprite;
+        profileImage.preserveAspect = true;
     }
 
     public void SetPlayerTheme(PlayerTheme playerTheme) {

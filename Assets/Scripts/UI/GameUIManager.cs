@@ -329,6 +329,7 @@ public class GameUIManager : NetworkBehaviour
         optionsWindow.SetActive(isOpen);
         soundOptionsWindow.SetActive(false);
         surrenderWindow.SetActive(false);
+        BoardManager.Instance.SetOptionsWindow(isOpen);
     }
 
     public void OpenEndGameWindow(string title, string text) {

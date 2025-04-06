@@ -75,12 +75,10 @@ public class GameManager : NetworkBehaviour
             if (isOptionWindowOpen) {
                 isOptionWindowOpen = false;
                 GameUIManager.Instance.SetOptionsWindow(isOptionWindowOpen);
-                BoardManager.Instance.SetOptionsWindow(isOptionWindowOpen);
                 return;
             }
             isOptionWindowOpen = true;
             GameUIManager.Instance.SetOptionsWindow(isOptionWindowOpen);
-            BoardManager.Instance.SetOptionsWindow(isOptionWindowOpen);
         }
     }
 

@@ -174,23 +174,7 @@ public class ChessLobby : MonoBehaviour
             string relayJoinCode = joinedLobby.Data[KEY_RELAY_JOIN_CODE].Value;
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
 
-            string host = joinAllocation.RelayServer.IpV4;
-            ushort port = (ushort)joinAllocation.RelayServer.Port;
-            byte[] joinAllocationId = joinAllocation.AllocationIdBytes;
-            byte[] connectionData = joinAllocation.ConnectionData;
-            byte[] hostConnectionData = joinAllocation.HostConnectionData;
-            byte[] key = joinAllocation.Key;
-            bool isSecure = false;
-
-            foreach (var endpoint in joinAllocation.ServerEndpoints) {
-                if (endpoint.ConnectionType == "dtls") {
-                    host = endpoint.Host;
-                    port = (ushort)endpoint.Port;
-                    isSecure = endpoint.Secure;
-                }
-            }
-
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(new RelayServerData(host, port, joinAllocationId, connectionData, hostConnectionData, key, isSecure));
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(joinAllocation, "dtls"));
 
 
             ChessMultiplayer.Instance.StartClient();
@@ -215,23 +199,7 @@ public class ChessLobby : MonoBehaviour
             string relayJoinCode = joinedLobby.Data[KEY_RELAY_JOIN_CODE].Value;
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
 
-            string host = joinAllocation.RelayServer.IpV4;
-            ushort port = (ushort)joinAllocation.RelayServer.Port;
-            byte[] joinAllocationId = joinAllocation.AllocationIdBytes;
-            byte[] connectionData = joinAllocation.ConnectionData;
-            byte[] hostConnectionData = joinAllocation.HostConnectionData;
-            byte[] key = joinAllocation.Key;
-            bool isSecure = false;
-
-            foreach (var endpoint in joinAllocation.ServerEndpoints) {
-                if (endpoint.ConnectionType == "dtls") {
-                    host = endpoint.Host;
-                    port = (ushort)endpoint.Port;
-                    isSecure = endpoint.Secure;
-                }
-            }
-
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(new RelayServerData(host, port, joinAllocationId, connectionData, hostConnectionData, key, isSecure));
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(joinAllocation, "dtls"));
 
             ChessMultiplayer.Instance.StartClient();
             LobbyUIManager.Instance.OpenLobbyMenu(joinedLobby);
@@ -255,23 +223,7 @@ public class ChessLobby : MonoBehaviour
             string relayJoinCode = joinedLobby.Data[KEY_RELAY_JOIN_CODE].Value;
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
 
-            string host = joinAllocation.RelayServer.IpV4;
-            ushort port = (ushort)joinAllocation.RelayServer.Port;
-            byte[] joinAllocationId = joinAllocation.AllocationIdBytes;
-            byte[] connectionData = joinAllocation.ConnectionData;
-            byte[] hostConnectionData = joinAllocation.HostConnectionData;
-            byte[] key = joinAllocation.Key;
-            bool isSecure = false;
-
-            foreach (var endpoint in joinAllocation.ServerEndpoints) {
-                if (endpoint.ConnectionType == "dtls") {
-                    host = endpoint.Host;
-                    port = (ushort)endpoint.Port;
-                    isSecure = endpoint.Secure;
-                }
-            }
-
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(new RelayServerData(host, port, joinAllocationId, connectionData, hostConnectionData, key, isSecure));
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(joinAllocation, "dtls"));
 
             ChessMultiplayer.Instance.StartClient();
             LobbyUIManager.Instance.OpenLobbyMenu(joinedLobby);

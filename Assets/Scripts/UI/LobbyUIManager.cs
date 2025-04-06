@@ -14,7 +14,6 @@ public class LobbyUIManager : MonoBehaviour
     [SerializeField] private GameObject serverListMenu;
     [SerializeField] private GameObject createLobbyMenu;
     [SerializeField] private GameObject lobbyMenu;
-    [SerializeField] private GameObject hostDisconnectedMessage;
     [SerializeField] private Button mainMenuButton;
     [SerializeField] private Button createLobbyButton;
     [SerializeField] private Button quickJoinButton;
@@ -23,7 +22,6 @@ public class LobbyUIManager : MonoBehaviour
     [SerializeField] private Button joinCodeButton;
     [SerializeField] private Button createButton;
     [SerializeField] private Button startButton;
-    [SerializeField] private Button hostDisconnectedBackButton;
     [SerializeField] private TMP_InputField lobbyNameInput;
     [SerializeField] private TMP_InputField joinCodeInput;
     [SerializeField] private Toggle lobbyPrivateToggle;
@@ -79,7 +77,6 @@ public class LobbyUIManager : MonoBehaviour
         serverListMenu.SetActive(true);
         createLobbyMenu.SetActive(false);
         lobbyMenu.SetActive(false);
-        hostDisconnectedMessage.SetActive(false);
         lobbyTemplate.gameObject.SetActive(false);
         gameTimer = 180;
     }
@@ -113,10 +110,6 @@ public class LobbyUIManager : MonoBehaviour
             StartGame();
         });
 
-        hostDisconnectedBackButton.onClick.AddListener(() => {
-            BackToServerListMenu();
-        });
-
         timerDropdown.onValueChanged.AddListener(SetGameTimer);
 
         createButton.onClick.AddListener(() => {
@@ -143,7 +136,6 @@ public class LobbyUIManager : MonoBehaviour
         serverListMenu.SetActive(true);
         createLobbyMenu.SetActive(false);
         lobbyMenu.SetActive(false);
-        hostDisconnectedMessage.SetActive(false);
 
         ChessLobby.Instance.LeaveLobby();
     }
@@ -202,7 +194,6 @@ public class LobbyUIManager : MonoBehaviour
         createLobbyMenu.SetActive(false);
         lobbyMenu.SetActive(true);
         serverListMenu.SetActive(false);
-        hostDisconnectedMessage.SetActive(false);
 
         if (lobby != null) {
             lobbyNameText.text = lobby.Name;
@@ -214,8 +205,12 @@ public class LobbyUIManager : MonoBehaviour
         startButton.gameObject.SetActive(canActive);
     }
 
-    public void OpenHostDisconnectWindow() {
-        hostDisconnectedMessage.SetActive(true);
+    public bool IsLobbyWindowActive() {
+        return lobbyMenu.activeSelf;
+    }
+
+    public void RedirectToServerListMenu() {
+        BackToServerListMenu();
     }
 
     private void OnDestroy() {

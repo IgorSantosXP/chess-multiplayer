@@ -19,6 +19,8 @@ public class ChessMultiplayer : NetworkBehaviour
 
     public event EventHandler OnPlayerDataNetworkListChanged;
     public event EventHandler OnFailedToJoinGame;
+    public event EventHandler OnCreateLobbyCompleted;
+    public event EventHandler OnJoinCompleted;
 
     private void Awake() {
         Instance = this;
@@ -78,6 +80,7 @@ public class ChessMultiplayer : NetworkBehaviour
     private void NetworkManager_OnClientConnectedCallback(ulong clientId) {
         if (isInGameScene) return;
         if (clientId == NetworkManager.ServerClientId) {
+            OnCreateLobbyCompleted?.Invoke(this, EventArgs.Empty);
             playerDataNetworkList.Clear();
         }
 
@@ -112,6 +115,7 @@ public class ChessMultiplayer : NetworkBehaviour
         SetPlayerNameServerRpc(ProfileManager.Instance.GetPlayerName());
         SendImageToServer(ProfileManager.Instance.GetProfileSprite());
         SetPlayerIdServerRpc(AuthenticationService.Instance.PlayerId);
+        OnJoinCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     private void NetworkManager_Client_OnClientDisconnectCallback(ulong clientId) {
@@ -120,7 +124,6 @@ public class ChessMultiplayer : NetworkBehaviour
         OnFailedToJoinGame?.Invoke(this, EventArgs.Empty);
         NetworkManager.Singleton.OnClientDisconnectCallback -= NetworkManager_Client_OnClientDisconnectCallback;
         NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_Client_OnClientConnectedCallback;
-        LobbyUIManager.Instance.OpenHostDisconnectWindow();
     }
 
     [ServerRpc(RequireOwnership = false)]

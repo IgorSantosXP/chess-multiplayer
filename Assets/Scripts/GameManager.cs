@@ -65,7 +65,6 @@ public class GameManager : NetworkBehaviour
 
         whiteTimeRemaining.OnValueChanged += (oldValue, newValue) => HandleTimeChanged();
         blackTimeRemaining.OnValueChanged += (oldValue, newValue) => HandleTimeChanged();
-        //currentPlayablePlayerType.OnValueChanged += (oldValue, newValue) => UpdateTimerBackgroundUI(newValue);
 
         UpdateTimerUI();
     }
@@ -103,11 +102,6 @@ public class GameManager : NetworkBehaviour
 
     private void BoardManager_OnEndGame(string title, string text) {
         isGameRunning = false;
-    }
-
-    private void UpdateTimerBackgroundUI(PlayerType playerType) {
-        SetTimerUIValues(playerType);
-        SetTimerClockVisibility(playerType);
     }
 
     private void HandleTimeChanged() {

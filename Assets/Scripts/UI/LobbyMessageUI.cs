@@ -15,11 +15,11 @@ public class LobbyMessageUI : MonoBehaviour
 
     private void Start() {
         ChessMultiplayer.Instance.OnFailedToJoinGame += ChessMultiplayer_OnFailedToJoinGame;
+        ChessMultiplayer.Instance.OnCreateLobbyCompleted += ChessLobby_OnCreateLobbyCompleted;
+        ChessMultiplayer.Instance.OnJoinCompleted += ChessLobby_OnJoinCompleted;
         ChessLobby.Instance.OnCreateLobbyStarted += ChessLobby_OnCreateLobbyStarted;
-        ChessLobby.Instance.OnCreateLobbyCompleted += ChessLobby_OnCreateLobbyCompleted;
         ChessLobby.Instance.OnCreateLobbyFailed += ChessLobby_OnCreateLobbyFailed;
         ChessLobby.Instance.OnJoinStarted += ChessLobby_OnJoinStarted;
-        ChessLobby.Instance.OnJoinCompleted += ChessLobby_OnJoinCompleted;
         ChessLobby.Instance.OnJoinFailed += ChessLobby_OnJoinFailed;
         ChessLobby.Instance.OnQuickJoinFailed += ChessLobby_OnQuickJoinFailed;
 
@@ -61,6 +61,8 @@ public class LobbyMessageUI : MonoBehaviour
     }
 
     private void ChessMultiplayer_OnFailedToJoinGame(object sender, System.EventArgs e) {
+        Debug.Log("ChessMultiplayer_OnFailedToJoinGame");
+        if (!LobbyUIManager.Instance.IsLobbyWindowActive()) return;
         if (NetworkManager.Singleton.DisconnectReason == "") {
             ShowMessage("Failed to connect");
             closeButton.gameObject.SetActive(true);
@@ -68,6 +70,7 @@ public class LobbyMessageUI : MonoBehaviour
             ShowMessage(NetworkManager.Singleton.DisconnectReason);
             closeButton.gameObject.SetActive(true);
         }
+        LobbyUIManager.Instance.RedirectToServerListMenu();
     }
 
     private void ShowMessage(string message) {

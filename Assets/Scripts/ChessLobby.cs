@@ -20,10 +20,8 @@ public class ChessLobby : MonoBehaviour
     public static ChessLobby Instance { get; private set; }
 
     public event EventHandler OnCreateLobbyStarted;
-    public event EventHandler OnCreateLobbyCompleted;
     public event EventHandler OnCreateLobbyFailed;
     public event EventHandler OnJoinStarted;
-    public event EventHandler OnJoinCompleted;
     public event EventHandler OnQuickJoinFailed;
     public event EventHandler OnJoinFailed;
     public event EventHandler<OnLobbyListChangedEventArgs> OnLobbyListChanged;
@@ -156,7 +154,6 @@ public class ChessLobby : MonoBehaviour
             ChessMultiplayer.Instance.StartHost();
             LobbyUIManager.Instance.OpenLobbyMenu(joinedLobby);
             ChessMultiplayer.Instance.SetGameTimer(gameTimer);
-            OnCreateLobbyCompleted?.Invoke(this, EventArgs.Empty);
         } catch (LobbyServiceException e) {
             Debug.Log(e);
             OnCreateLobbyFailed?.Invoke(this, EventArgs.Empty);
@@ -167,6 +164,13 @@ public class ChessLobby : MonoBehaviour
         OnJoinStarted?.Invoke(this, EventArgs.Empty);
         try {
             joinedLobby = await LobbyService.Instance.QuickJoinLobbyAsync();
+
+            if (joinedLobby.Data == null) {
+                OnQuickJoinFailed?.Invoke(this, EventArgs.Empty);
+                LeaveLobby();
+                return;
+            }
+
             string relayJoinCode = joinedLobby.Data[KEY_RELAY_JOIN_CODE].Value;
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
 
@@ -191,7 +195,6 @@ public class ChessLobby : MonoBehaviour
 
             ChessMultiplayer.Instance.StartClient();
             LobbyUIManager.Instance.OpenLobbyMenu(joinedLobby);
-            OnJoinCompleted?.Invoke(this, EventArgs.Empty);
         } catch (LobbyServiceException e) {
             Debug.Log(e);
             OnQuickJoinFailed?.Invoke(this, EventArgs.Empty);
@@ -202,6 +205,13 @@ public class ChessLobby : MonoBehaviour
         OnJoinStarted?.Invoke(this, EventArgs.Empty);
         try {
             joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId);
+
+            if (joinedLobby.Data == null) {
+                OnJoinFailed?.Invoke(this, EventArgs.Empty);
+                LeaveLobby();
+                return;
+            }
+
             string relayJoinCode = joinedLobby.Data[KEY_RELAY_JOIN_CODE].Value;
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
 
@@ -225,7 +235,6 @@ public class ChessLobby : MonoBehaviour
 
             ChessMultiplayer.Instance.StartClient();
             LobbyUIManager.Instance.OpenLobbyMenu(joinedLobby);
-            OnJoinCompleted?.Invoke(this, EventArgs.Empty);
         } catch (LobbyServiceException e) {
             Debug.Log(e);
             OnJoinFailed?.Invoke(this, EventArgs.Empty);
@@ -237,6 +246,12 @@ public class ChessLobby : MonoBehaviour
         try {
             joinedLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode);
 
+            if (joinedLobby.Data == null) {
+                OnJoinFailed?.Invoke(this, EventArgs.Empty);
+                LeaveLobby();
+                return;
+            }
+
             string relayJoinCode = joinedLobby.Data[KEY_RELAY_JOIN_CODE].Value;
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
 
@@ -260,7 +275,6 @@ public class ChessLobby : MonoBehaviour
 
             ChessMultiplayer.Instance.StartClient();
             LobbyUIManager.Instance.OpenLobbyMenu(joinedLobby);
-            OnJoinCompleted?.Invoke(this, EventArgs.Empty);
         } catch (LobbyServiceException e) {
             Debug.Log(e);
             OnJoinFailed?.Invoke(this, EventArgs.Empty);

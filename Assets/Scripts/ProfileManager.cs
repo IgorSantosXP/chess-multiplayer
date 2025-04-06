@@ -30,7 +30,7 @@ public class ProfileManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "PlayerName" + UnityEngine.Random.Range(100, 1000));
+        playerName = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_NAME_MULTIPLAYER, "Player" + UnityEngine.Random.Range(100, 1000));
         string themeString = PlayerPrefs.GetString(PLAYER_PREFS_PLAYER_THEME, PlayerTheme.Classic.ToString());
 
         if (Enum.TryParse(themeString, out PlayerTheme parsedTheme)) {

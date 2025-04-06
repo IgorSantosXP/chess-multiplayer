@@ -87,7 +87,22 @@ public class ProfileManager : MonoBehaviour
         Texture2D texture = new Texture2D(2, 2);
         texture.LoadImage(imageData);
 
-        Texture2D resized = ResizeTextureGPU(texture, 128, 128);
+        int maxSize = 256;
+        int originalWidth = texture.width;
+        int originalHeight = texture.height;
+
+        float aspectRatio = (float)originalWidth / originalHeight;
+
+        int targetWidth = maxSize;
+        int targetHeight = maxSize;
+
+        if (aspectRatio > 1f) {
+            targetHeight = Mathf.RoundToInt(maxSize / aspectRatio);
+        } else {
+            targetWidth = Mathf.RoundToInt(maxSize * aspectRatio);
+        }
+
+        Texture2D resized = ResizeTextureGPU(texture, targetWidth, targetHeight);
 
         Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), Vector2.one * 0.5f);
         MainMenuUIManager.Instance.SetProfileImage(sprite);
@@ -124,7 +139,22 @@ public class ProfileManager : MonoBehaviour
             Texture2D texture = new Texture2D(2, 2);
             texture.LoadImage(imageData);
 
-            Texture2D resized = ResizeTextureGPU(texture, 128, 128);
+            int maxSize = 256;
+            int originalWidth = texture.width;
+            int originalHeight = texture.height;
+
+            float aspectRatio = (float)originalWidth / originalHeight;
+
+            int targetWidth = maxSize;
+            int targetHeight = maxSize;
+
+            if (aspectRatio > 1f) {
+                targetHeight = Mathf.RoundToInt(maxSize / aspectRatio);
+            } else {
+                targetWidth = Mathf.RoundToInt(maxSize * aspectRatio);
+            }
+
+            Texture2D resized = ResizeTextureGPU(texture, targetWidth, targetHeight);
 
             Sprite sprite = Sprite.Create(resized, new Rect(0, 0, resized.width, resized.height), Vector2.one * 0.5f);
             MainMenuUIManager.Instance.SetProfileImage(sprite);

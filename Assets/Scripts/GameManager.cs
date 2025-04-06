@@ -349,11 +349,9 @@ public class GameManager : NetworkBehaviour
     }
 
     private void SetTimer() {
-        //whiteTimeRemaining = ChessMultiplayer.Instance.GetGameTimer();
-        //blackTimeRemaining = ChessMultiplayer.Instance.GetGameTimer();
         if (!IsServer) return;
-        whiteTimeRemaining.Value = 30f;
-        blackTimeRemaining.Value = 30f;
+        whiteTimeRemaining.Value = ChessMultiplayer.Instance.GetGameTimer();
+        blackTimeRemaining.Value = ChessMultiplayer.Instance.GetGameTimer();
     }
 
     [Rpc(SendTo.ClientsAndHost)]

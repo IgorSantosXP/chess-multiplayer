@@ -368,8 +368,8 @@ public class BoardManager : NetworkBehaviour
             int rookTargetX = target.x > 4 ? 5 : 3;
             StartCoroutine(MoveToPosition(new Vector2Int(rookStartX, y), new Vector2Int(rookTargetX, y), true, pieceDataName, false));
         }
-        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
         BoardSound boardSound = GetBoardSound(start, target, pieceDataName);
+        StartCoroutine(MoveToPosition(start, target, false, pieceDataName, isDragging));
         PlaySound(boardSound);
     }
 

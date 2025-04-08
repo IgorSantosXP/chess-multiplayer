@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -375,7 +376,7 @@ public class BoardManager : NetworkBehaviour
 
     private BoardSound GetBoardSound(Vector2Int start, Vector2Int target, string pieceDataName) {
         Piece piece = piecesOnBoard[start.x, start.y];
-
+        
         if (piece == null) return BoardSound.None;
 
         BoardSound boardSound = BoardSound.MoveSelf;
@@ -432,6 +433,8 @@ public class BoardManager : NetworkBehaviour
         Piece[,] simulatedBoard = CloneBoard(piecesOnBoard);
         
         Piece piece = simulatedBoard[start.x, start.y];
+        piece.MoveTo(target);
+
         simulatedBoard[target.x, target.y] = piece;
         simulatedBoard[start.x, start.y] = null;
 
